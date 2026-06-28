@@ -1,5 +1,5 @@
 import assert from 'node:assert';
-import { detectPasteShockwave, detectBackspaceCascade } from './engine.js';
+import { detectPasteShockwave, detectBackspaceCascade, detectInfiniteLoop, levenshtein } from './engine.js';
 
 // Paste Shockwave: > 40 chars in < 10ms
 const pasteEvents = [
@@ -34,5 +34,23 @@ assert.equal(detectBackspaceCascade(cascadeEvents).triggered, true, 'cascade wit
 assert.equal(detectBackspaceCascade(cascadeEvents).afterError, "NameError: name 'y' is not defined");
 assert.equal(detectBackspaceCascade(lateDeleteEvents).triggered, false, 'cascade after 3s does not trigger');
 assert.equal(detectBackspaceCascade(successThenDelete).triggered, false, 'delete after success does not trigger');
+
+assert.equal(levenshtein('abc', 'abd'), 1, 'one substitution');
+assert.equal(levenshtein('print(a + b)', 'print(a - b)'), 1, 'one char diff');
+
+const loopEvents = [
+  { type: 'execution', status: 'failed', codeSnapshot: 'print(a + b)', timestamp: 1000 },
+  { type: 'execution', status: 'failed', codeSnapshot: 'print(a - b)', timestamp: 20000 },
+  { type: 'execution', status: 'failed', codeSnapshot: 'print(a * b)', timestamp: 40000 }
+];
+const bigChangeEvents = [
+  { type: 'execution', status: 'failed', codeSnapshot: 'print(a)', timestamp: 1000 },
+  { type: 'execution', status: 'failed', codeSnapshot: 'def f(): return 42', timestamp: 20000 },
+  { type: 'execution', status: 'failed', codeSnapshot: 'x = [i for i in range(9)]', timestamp: 40000 }
+];
+
+assert.equal(detectInfiniteLoop(loopEvents).triggered, true, 'tiny diffs across 3 runs trigger');
+assert.equal(detectInfiniteLoop(loopEvents).executions, 3);
+assert.equal(detectInfiniteLoop(bigChangeEvents).triggered, false, 'large diffs do not trigger');
 
 console.log('engine.test.js: all assertions passed');

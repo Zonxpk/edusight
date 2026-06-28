@@ -32,3 +32,39 @@ export function detectBackspaceCascade(events) {
   }
   return { triggered: false };
 }
+
+const LOOP_WINDOW_MS = 60000;
+const LOOP_MIN_EXECUTIONS = 3;
+const LOOP_MAX_DISTANCE = 3;
+
+export function levenshtein(a, b) {
+  const m = a.length, n = b.length;
+  const dp = Array.from({ length: m + 1 }, () => new Array(n + 1).fill(0));
+  for (let i = 0; i <= m; i++) dp[i][0] = i;
+  for (let j = 0; j <= n; j++) dp[0][j] = j;
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      dp[i][j] = Math.min(dp[i - 1][j] + 1, dp[i][j - 1] + 1, dp[i - 1][j - 1] + cost);
+    }
+  }
+  return dp[m][n];
+}
+
+export function detectInfiniteLoop(events) {
+  const execs = events.filter(e => e.type === 'execution' && e.codeSnapshot != null);
+  for (let i = 0; i + LOOP_MIN_EXECUTIONS - 1 < execs.length; i++) {
+    const window = execs.slice(i, i + LOOP_MIN_EXECUTIONS);
+    const span = window[window.length - 1].timestamp - window[0].timestamp;
+    if (span > LOOP_WINDOW_MS) continue;
+    let allTiny = true;
+    for (let k = 1; k < window.length; k++) {
+      if (levenshtein(window[k - 1].codeSnapshot, window[k].codeSnapshot) >= LOOP_MAX_DISTANCE) {
+        allTiny = false;
+        break;
+      }
+    }
+    if (allTiny) return { triggered: true, executions: window.length, spanMs: span };
+  }
+  return { triggered: false };
+}
