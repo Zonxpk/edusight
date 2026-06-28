@@ -1,0 +1,32 @@
+:root {
+  --bg: #f7f4ec;          /* light beige / off-white */
+  --primary: #14306b;     /* deep blue */
+  --accent-cyan: #22c3e6;
+  --accent-yellow: #ffd23f;
+  --danger: #e2483a;
+  --ink: #1c2433;
+  --muted: #6b7280;
+}
+body { background: var(--bg); color: var(--ink); font-family: system-ui, sans-serif; }
+.brand-title { color: var(--primary); }
+
+/* Teacher alert cards */
+.alert { border-radius: 10px; padding: 14px 16px; margin-bottom: 10px; font-size: 0.95rem; }
+.alert-warning { background: #fff7e0; border-left: 5px solid var(--accent-yellow); }
+.alert-critical { background: #fdecea; border-left: 5px solid var(--danger); }
+
+/* Class matrix scatter */
+.matrix { position: relative; width: 100%; height: 360px; background: #fff;
+  border: 1px solid #e5e7eb; border-radius: 12px; }
+.matrix .danger-zone { position: absolute; right: 0; bottom: 0; width: 50%; height: 50%;
+  background: rgba(226,72,58,0.06); border-top: 1px dashed var(--danger);
+  border-left: 1px dashed var(--danger); }
+.dot { position: absolute; width: 14px; height: 14px; border-radius: 50%;
+  background: var(--primary); transform: translate(-50%, 50%); }
+.dot-danger { background: var(--danger); box-shadow: 0 0 0 4px rgba(226,72,58,0.2); }
+
+/* Parent portal */
+.badge { display: inline-block; background: var(--accent-cyan); color: var(--primary);
+  font-weight: 600; padding: 8px 14px; border-radius: 999px; margin: 4px; }
+.replay-pane { background: #0f172a; color: #e2e8f0; font-family: ui-monospace, monospace;
+  white-space: pre; padding: 16px; border-radius: 10px; min-height: 220px; }
