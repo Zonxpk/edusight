@@ -1,0 +1,15 @@
+{
+  "sessionId": "sess_sam_01",
+  "studentId": "Sam",
+  "classId": "ai_foundations_101",
+  "timestamp": 1782696000000,
+  "events": [
+    { "timestamp": 1782696001000, "type": "text_change", "delta": "for i in range(10):", "action": "insert", "cursorPosition": 19, "timeSpentMs": 1400 },
+    { "timestamp": 1782696002500, "type": "text_change", "delta": "\n    print(i)", "action": "insert", "cursorPosition": 33, "timeSpentMs": 1300 },
+    { "timestamp": 1782696004000, "type": "text_change", "delta": "\n    total = total + i", "action": "insert", "cursorPosition": 56, "timeSpentMs": 1500 },
+    { "timestamp": 1782696005500, "type": "text_change", "delta": "\n    return total", "action": "insert", "cursorPosition": 73, "timeSpentMs": 1450 },
+    { "timestamp": 1782696007000, "type": "execution", "status": "failed", "error": "NameError: name 'total' is not defined", "codeSnapshot": "for i in range(10):\n    print(i)\n    total = total + i\n    return total" },
+    { "timestamp": 1782696011000, "type": "text_change", "delta": "total = 0\n", "action": "insert", "cursorPosition": 10, "timeSpentMs": 3500 },
+    { "timestamp": 1782696012000, "type": "execution", "status": "success", "codeSnapshot": "total = 0\nfor i in range(10):\n    print(i)\n    total = total + i\nreturn total" }
+  ]
+}

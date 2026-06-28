@@ -1,0 +1,12 @@
+{
+  "sessionId": "sess_kevin_01",
+  "studentId": "Kevin",
+  "classId": "ai_foundations_101",
+  "timestamp": 1782694000000,
+  "events": [
+    { "timestamp": 1782694001000, "type": "text_change", "delta": "for i in range(10):", "action": "insert", "cursorPosition": 19, "timeSpentMs": 1400 },
+    { "timestamp": 1782694002000, "type": "text_change", "delta": "\n    x = y + 1", "action": "insert", "cursorPosition": 33, "timeSpentMs": 900 },
+    { "timestamp": 1782694003000, "type": "execution", "status": "failed", "error": "NameError: name 'y' is not defined", "codeSnapshot": "for i in range(10):\n    x = y + 1" },
+    { "timestamp": 1782694004500, "type": "text_change", "delta": "for i in range(10):\n    x = y + 1", "action": "delete_cascade", "cursorPosition": 0, "timeSpentMs": 600 }
+  ]
+}

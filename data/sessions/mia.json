@@ -1,0 +1,12 @@
+{
+  "sessionId": "sess_mia_01",
+  "studentId": "Mia",
+  "classId": "ai_foundations_101",
+  "timestamp": 1782695000000,
+  "events": [
+    { "timestamp": 1782695001000, "type": "text_change", "delta": "print(a + b)", "action": "insert", "cursorPosition": 12, "timeSpentMs": 1200 },
+    { "timestamp": 1782695005000, "type": "execution", "status": "failed", "error": "NameError", "codeSnapshot": "print(a + b)" },
+    { "timestamp": 1782695020000, "type": "execution", "status": "failed", "error": "NameError", "codeSnapshot": "print(a - b)" },
+    { "timestamp": 1782695040000, "type": "execution", "status": "failed", "error": "NameError", "codeSnapshot": "print(a * b)" }
+  ]
+}
