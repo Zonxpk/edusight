@@ -68,3 +68,21 @@ export function detectInfiniteLoop(events) {
   }
   return { triggered: false };
 }
+
+export function computeScores(session) {
+  const events = session.events;
+  let chars = 0, ms = 0;
+  for (const e of events) {
+    if (e.type === 'text_change' && (e.action === 'insert' || e.action === 'paste')) {
+      chars += e.delta ? e.delta.length : 0;
+      ms += e.timeSpentMs || 0;
+    }
+  }
+  const typingVelocity = ms > 0 ? chars / (ms / 1000) : 0;
+  let stability = 100;
+  if (detectPasteShockwave(events).triggered) stability -= 40;
+  if (detectBackspaceCascade(events).triggered) stability -= 35;
+  if (detectInfiniteLoop(events).triggered) stability -= 35;
+  stability = Math.max(0, Math.min(100, stability));
+  return { typingVelocity, logicalStability: stability };
+}
