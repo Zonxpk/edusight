@@ -14,3 +14,21 @@ export function detectPasteShockwave(events) {
   }
   return { triggered: false };
 }
+
+const CASCADE_WINDOW_MS = 3000;
+
+export function detectBackspaceCascade(events) {
+  for (let i = 0; i < events.length; i++) {
+    const e = events[i];
+    if (e.type === 'execution' && e.status === 'failed') {
+      for (let j = i + 1; j < events.length; j++) {
+        const next = events[j];
+        if (next.timestamp - e.timestamp > CASCADE_WINDOW_MS) break;
+        if (next.type === 'text_change' && next.action === 'delete_cascade') {
+          return { triggered: true, afterError: e.error, withinMs: next.timestamp - e.timestamp };
+        }
+      }
+    }
+  }
+  return { triggered: false };
+}
