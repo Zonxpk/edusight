@@ -1,5 +1,6 @@
 import assert from 'node:assert';
-import { detectPasteShockwave, detectBackspaceCascade, detectInfiniteLoop, levenshtein, computeScores } from './engine.js';
+import { detectPasteShockwave, detectBackspaceCascade, detectInfiniteLoop, levenshtein, computeScores, earnsResilientDebugger, earnsArchitecturalThinker } from './engine.js';
+import { readFileSync } from 'node:fs';
 
 // Paste Shockwave: > 40 chars in < 10ms
 const pasteEvents = [
@@ -67,5 +68,15 @@ assert.ok(Math.abs(clean.typingVelocity - 4) < 0.001, '4 chars / 1s = 4 chars/s'
 const paste = computeScores(pasteSession);
 assert.equal(paste.logicalStability, 60, '100 - 40 for paste shockwave');
 assert.ok(paste.typingVelocity > 1000, '85 chars in 2ms is very high velocity');
+
+const sam = JSON.parse(readFileSync('data/sessions/sam.json', 'utf8'));
+assert.equal(earnsResilientDebugger(sam.events), true, 'Sam read the error and fixed the variable');
+assert.equal(earnsArchitecturalThinker(sam.events), true, 'Sam typed at a steady cadence');
+
+const kevin = JSON.parse(readFileSync('data/sessions/kevin.json', 'utf8'));
+assert.equal(earnsResilientDebugger(kevin.events), false, 'Kevin wiped his code after the error');
+
+const alice = JSON.parse(readFileSync('data/sessions/alice.json', 'utf8'));
+assert.equal(earnsArchitecturalThinker(alice.events), false, 'Alice pasted, not composed');
 
 console.log('engine.test.js: all assertions passed');

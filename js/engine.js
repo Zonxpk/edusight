@@ -86,3 +86,37 @@ export function computeScores(session) {
   stability = Math.max(0, Math.min(100, stability));
   return { typingVelocity, logicalStability: stability };
 }
+
+// Resilient Debugger: after a failed run, the student made a thoughtful edit
+// (a non-deleting change they spent real time on) instead of wiping the file.
+export function earnsResilientDebugger(events) {
+  if (detectBackspaceCascade(events).triggered) return false;
+  for (let i = 0; i < events.length; i++) {
+    const e = events[i];
+    if (e.type === 'execution' && e.status === 'failed') {
+      for (let j = i + 1; j < events.length; j++) {
+        const next = events[j];
+        if (next.type === 'text_change' && next.action !== 'delete_cascade'
+            && (next.timeSpentMs || 0) > 3000) {
+          return true;
+        }
+      }
+    }
+  }
+  return false;
+}
+
+// Architectural Thinker: steady typing cadence (low variation), no paste shockwave.
+// ponytail: coefficient-of-variation heuristic; tune threshold if cadence model changes.
+export function earnsArchitecturalThinker(events) {
+  if (detectPasteShockwave(events).triggered) return false;
+  const times = events
+    .filter(e => e.type === 'text_change' && e.action === 'insert')
+    .map(e => e.timeSpentMs || 0);
+  if (times.length < 2) return false;
+  const mean = times.reduce((a, b) => a + b, 0) / times.length;
+  if (mean === 0) return false;
+  const variance = times.reduce((a, t) => a + (t - mean) ** 2, 0) / times.length;
+  const cv = Math.sqrt(variance) / mean;
+  return cv < 0.6;
+}
