@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>CognitiveReplay — Teacher Panel</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="css/brand.css" />
+</head>
+<body class="min-h-screen">
+  <main class="max-w-6xl mx-auto px-6 py-10">
+    <a href="index.html" class="text-sm" style="color: var(--muted)">← Home</a>
+    <h1 class="brand-title text-3xl font-bold mt-2 mb-8">Teacher Panel</h1>
+    <div class="grid lg:grid-cols-2 gap-8">
+      <section>
+        <h2 class="text-xl font-semibold mb-3">Alert Queue</h2>
+        <div id="alert-queue"></div>
+      </section>
+      <section>
+        <h2 class="text-xl font-semibold mb-3">Class Matrix</h2>
+        <p class="text-sm mb-2" style="color: var(--muted)">
+          Typing Velocity (→) vs Logical Stability (↑). Bottom-right = needs support.
+        </p>
+        <div class="matrix" id="matrix">
+          <div class="danger-zone"></div>
+          <div id="matrix-plot"></div>
+        </div>
+      </section>
+    </div>
+  </main>
+  <script type="module" src="js/teacher.js"></script>
+</body>
+</html>
