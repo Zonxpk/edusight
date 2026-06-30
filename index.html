@@ -90,7 +90,8 @@
 
     .primary-chip:hover,
     .tab-button:hover,
-    .insight-card:hover,
+    .recommendation-card:hover,
+    .evidence-card:hover,
     .marker-pill:hover {
       transform: translateY(-1px);
     }
@@ -180,6 +181,49 @@
       gap: 12px;
     }
 
+    .dashboard-mode-switch {
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 10px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+
+    .insight-stack {
+      display: grid;
+      gap: 14px;
+    }
+
+    .insight-section {
+      display: grid;
+      gap: 10px;
+      padding: 14px;
+      border-radius: 20px;
+      border: 1px solid rgba(20, 48, 107, 0.08);
+      background: rgba(255, 255, 255, 0.72);
+    }
+
+    .section-kicker {
+      font-size: 0.72rem;
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .recommendation-rail,
+    .evidence-rail {
+      display: grid;
+      gap: 10px;
+    }
+
+    .summary-rail {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
     .insight-section {
       display: grid;
       gap: 10px;
@@ -194,9 +238,10 @@
       margin-bottom: 2px;
     }
 
-    .insight-card {
+    .recommendation-card,
+    .evidence-card {
       border-radius: 18px;
-      padding: 14px;
+      padding: 16px;
       border: 1px solid rgba(20, 48, 107, 0.12);
       background: #fffdf8;
       text-align: left;
@@ -204,47 +249,42 @@
       transition: transform 140ms ease, box-shadow 140ms ease, border-color 140ms ease;
     }
 
-    .insight-card.is-highlighted {
+    .recommendation-card {
+      box-shadow: 0 10px 24px rgba(20, 48, 107, 0.04);
+    }
+
+    .evidence-card {
+      background: #f8fbff;
+    }
+
+    .previewable-card.is-highlighted {
       border-color: var(--accent-cyan);
       box-shadow: 0 0 0 2px rgba(34, 195, 230, 0.14);
     }
 
-    .insight-cue {
-      margin-top: 6px;
-      font-size: 0.76rem;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: var(--muted);
-    }
-
-    .insight-evidence {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      margin-top: 10px;
-    }
-
-    .evidence-pill {
+    .card-cue {
+      margin-top: 8px;
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      border-radius: 999px;
       padding: 6px 10px;
-      font-size: 0.8rem;
-      border: 1px solid rgba(20, 48, 107, 0.12);
-      background: rgba(244, 247, 251, 0.86);
+      border-radius: 999px;
+      background: rgba(34, 195, 230, 0.12);
       color: var(--primary);
+      font-size: 0.78rem;
+      font-weight: 700;
     }
 
-    .evidence-pill[data-kind="progress"] {
+    .summary-chip.risk {
+      border-color: rgba(217, 75, 75, 0.28);
+    }
+
+    .summary-chip.progress {
       border-color: rgba(34, 195, 230, 0.28);
-      background: rgba(34, 195, 230, 0.08);
     }
 
-    .summary-grid {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
+    .summary-chip.neutral {
+      border-color: rgba(20, 48, 107, 0.12);
     }
 
     .summary-chip {
@@ -352,11 +392,27 @@
       </article>
 
       <aside class="panel insight-panel">
-        <div class="tablist" role="tablist" aria-label="Insight views">
+        <div class="dashboard-mode-switch" role="tablist" aria-label="Insight views">
           <button id="tab-teacher" role="tab" aria-selected="true" class="tab-button">Teacher</button>
           <button id="tab-parent" role="tab" aria-selected="false" class="tab-button">Parent</button>
         </div>
-        <div id="insight-rail" class="insight-rail"></div>
+
+        <section class="insight-stack">
+          <div class="insight-section">
+            <div class="section-kicker">Recommended next steps</div>
+            <div id="recommendation-rail" class="recommendation-rail"></div>
+          </div>
+
+          <div class="insight-section">
+            <div class="section-kicker">Supporting evidence</div>
+            <div id="evidence-rail" class="evidence-rail"></div>
+          </div>
+
+          <div class="insight-section">
+            <div class="section-kicker">Behavior summary</div>
+            <div id="summary-rail" class="summary-rail"></div>
+          </div>
+        </section>
       </aside>
     </section>
   </main>
@@ -395,25 +451,37 @@
             cue: 'High retry count',
             previewLine: 2,
             evidence: [
-              { label: 'Repeated failed runs', frame: 5, kind: 'risk' },
-              { label: 'Reset after error', frame: 3, kind: 'risk' },
+              { label: 'Repeated failed runs', frame: 5, line: 2, kind: 'risk' },
+              { label: 'Reset after error', frame: 3, line: 1, kind: 'risk' },
             ],
           },
           {
-            id: 'stabilize-reset',
-            title: 'Slow the reset loop',
-            summary: 'A failed run is followed by a quick wipe and another nearly identical attempt.',
-            cue: 'Rapid edit after failure',
+            id: 'slow-down',
+            title: 'Slow down after errors',
+            summary: 'The edit pattern suggests fast reactions instead of a deliberate repair step.',
+            cue: 'Rushed recovery',
+            previewLine: 2,
+            evidence: [
+              { label: 'Short repair window', frame: 4, line: 2, kind: 'risk' },
+              { label: 'Repeated near-match attempt', frame: 6, line: 2, kind: 'risk' },
+            ],
+          },
+          {
+            id: 'reduce-shortcuts',
+            title: 'Reduce shortcut-heavy editing',
+            summary: 'A large change appears to reset the workspace instead of refining it.',
+            cue: 'Reset-heavy pattern',
             previewLine: 1,
             evidence: [
-              { label: 'Workspace cleared', frame: 3, kind: 'risk' },
-              { label: 'Same error repeated', frame: 5, kind: 'risk' },
+              { label: 'Paste shockwave', frame: 1, line: 1, kind: 'risk' },
+              { label: 'Delete cascade', frame: 3, line: 1, kind: 'risk' },
             ],
           },
         ],
         summary: [
           { label: 'Debugging persistence', value: 'Low', tone: 'risk' },
           { label: 'Edit stability', value: 'Mixed', tone: 'neutral' },
+          { label: 'Recovery after error', value: 'Needs support', tone: 'risk' },
         ],
       },
       parent: {
@@ -426,25 +494,37 @@
             cue: 'Growth opportunity',
             previewLine: 2,
             evidence: [
-              { label: 'Repeated failed runs', frame: 5, kind: 'risk' },
-              { label: 'Thoughtful follow-up edit', frame: 6, kind: 'progress' },
+              { label: 'Repeated failed runs', frame: 5, line: 2, kind: 'risk' },
+              { label: 'Thoughtful follow-up edit', frame: 7, line: 3, kind: 'progress' },
             ],
           },
           {
-            id: 'celebrate-recovery',
-            title: 'Celebrate steady recovery',
-            summary: 'A later edit shows the student can keep moving once they regroup.',
-            cue: 'Encourage consistency',
+            id: 'encourage-pause',
+            title: 'Encourage a pause after errors',
+            summary: 'A little more reflection may help the student make smaller, more useful repairs.',
+            cue: 'Builds confidence',
             previewLine: 3,
             evidence: [
-              { label: 'New helper introduced', frame: 6, kind: 'progress' },
-              { label: 'No paste-heavy shortcut', frame: 0, kind: 'progress' },
+              { label: 'Short repair window', frame: 4, line: 2, kind: 'risk' },
+              { label: 'Repeated near-match attempt', frame: 6, line: 2, kind: 'risk' },
+            ],
+          },
+          {
+            id: 'favor-careful-edits',
+            title: 'Favor careful edits over resets',
+            summary: 'The student benefits from smaller changes that keep progress visible.',
+            cue: 'Keep momentum',
+            previewLine: 1,
+            evidence: [
+              { label: 'Paste shockwave', frame: 1, line: 1, kind: 'risk' },
+              { label: 'Recovery edit', frame: 7, line: 3, kind: 'progress' },
             ],
           },
         ],
         summary: [
           { label: 'Recovery after error', value: 'Developing', tone: 'progress' },
           { label: 'Thoughtful pacing', value: 'Inconsistent', tone: 'neutral' },
+          { label: 'Editing confidence', value: 'Building', tone: 'progress' },
         ],
       },
     };
@@ -496,31 +576,30 @@
 
     function renderSummaryChip(item) {
       return `
-        <div class="summary-chip">
+        <div class="summary-chip ${item.tone}">
           <div class="summary-label">${item.label}</div>
           <div class="summary-value">${item.value}</div>
         </div>
       `;
     }
 
-    function renderEvidencePill(evidence, recommendationId) {
-      return `
-        <span class="evidence-pill" data-line="${evidence.frame}" data-kind="${evidence.kind}" data-recommendation-id="${recommendationId}">
-          ${evidence.label} · Frame ${evidence.frame}
-        </span>
-      `;
-    }
-
     function renderRecommendationCard(recommendation, viewTitle) {
       return `
-        <button class="insight-card" data-line="${recommendation.previewLine}" data-kind="${recommendation.id}">
+        <button class="recommendation-card previewable-card" data-preview-line="${recommendation.previewLine}" data-kind="recommendation" data-id="${recommendation.id}">
           <div class="insight-kicker">${viewTitle} recommendation</div>
           <div class="font-semibold">${recommendation.title}</div>
           <div class="insight-summary">${recommendation.summary}</div>
-          <div class="insight-cue">${recommendation.cue}</div>
-          <div class="insight-evidence">
-            ${recommendation.evidence.map(evidence => renderEvidencePill(evidence, recommendation.id)).join('')}
-          </div>
+          <div class="card-cue">${recommendation.cue}</div>
+        </button>
+      `;
+    }
+
+    function renderEvidenceCard(recommendation, evidence) {
+      return `
+        <button class="evidence-card previewable-card" data-preview-line="${evidence.line}" data-kind="${evidence.kind}" data-id="${recommendation.id}-${evidence.label}">
+          <div class="insight-kicker">${evidence.kind === 'progress' ? 'Progress signal' : 'Behavior evidence'}</div>
+          <div class="font-semibold">${evidence.label}</div>
+          <div class="insight-summary">Frame ${evidence.frame} · ${recommendation.title}</div>
         </button>
       `;
     }
@@ -557,35 +636,50 @@
       document.getElementById('timeline').value = String(state.playhead);
     }
 
-    function renderInsights() {
-      const rail = document.getElementById('insight-rail');
+    function renderRecommendations() {
+      const rail = document.getElementById('recommendation-rail');
       const view = getInsightView();
 
       if (!view.recommendations.length) {
-        rail.innerHTML = state.activeTab === 'teacher'
-          ? '<p class="empty-note">No teacher signals for this session.</p>'
-          : '<p class="empty-note">No parent badges yet for this session.</p>';
+        rail.innerHTML = '<p class="empty-note">No recommendations for this session.</p>';
         return;
       }
 
-      rail.innerHTML = `
-        <section class="insight-section">
-          <div class="section-label">Behavior summary</div>
-          <div class="summary-grid">
-            ${view.summary.map(renderSummaryChip).join('')}
-          </div>
-        </section>
-        <section class="insight-section">
-          <div class="section-label">Recommendations</div>
-          ${view.recommendations.map(recommendation => renderRecommendationCard(recommendation, view.title)).join('')}
-        </section>
-      `;
+      rail.innerHTML = view.recommendations.map(recommendation => renderRecommendationCard(recommendation, view.title)).join('');
+    }
 
-      document.querySelectorAll('.insight-card').forEach(card => {
+    function renderEvidence() {
+      const rail = document.getElementById('evidence-rail');
+      const view = getInsightView();
+      const evidenceItems = view.recommendations.flatMap(recommendation => recommendation.evidence.map(evidence => ({ recommendation, evidence })));
+
+      if (!evidenceItems.length) {
+        rail.innerHTML = '<p class="empty-note">No supporting evidence for this session.</p>';
+        return;
+      }
+
+      rail.innerHTML = evidenceItems.map(({ recommendation, evidence }) => renderEvidenceCard(recommendation, evidence)).join('');
+    }
+
+    function renderSummary() {
+      const rail = document.getElementById('summary-rail');
+      const view = getInsightView();
+
+      if (!view.summary.length) {
+        rail.innerHTML = '<p class="empty-note">No behavior summary for this session.</p>';
+        return;
+      }
+
+      rail.innerHTML = view.summary.map(renderSummaryChip).join('');
+    }
+
+    function bindPreviewCards() {
+      document.querySelectorAll('.previewable-card').forEach(card => {
         card.addEventListener('mouseenter', () => {
-          const line = Number(card.dataset.line);
+          clearHighlightedCards();
+          const line = Number(card.dataset.previewLine);
           state.previewLine = line;
-          highlightCards(card.dataset.kind);
+          card.classList.add('is-highlighted');
           renderCode();
         });
 
@@ -593,25 +687,22 @@
           clearPreview();
         });
       });
-
-      document.querySelectorAll('.evidence-pill').forEach(pill => {
-        pill.addEventListener('mouseenter', () => {
-          state.previewLine = Number(pill.dataset.line);
-          highlightCards(pill.dataset.recommendationId);
-          renderCode();
-        });
-      });
     }
 
-    function highlightCards(kind) {
-      document.querySelectorAll('.insight-card').forEach(card => {
-        card.classList.toggle('is-highlighted', card.dataset.kind === kind);
-      });
+    function clearHighlightedCards() {
+      document.querySelectorAll('.previewable-card').forEach(card => card.classList.remove('is-highlighted'));
+    }
+
+    function renderInsights() {
+      renderRecommendations();
+      renderEvidence();
+      renderSummary();
+      bindPreviewCards();
     }
 
     function clearPreview() {
       state.previewLine = null;
-      document.querySelectorAll('.insight-card').forEach(card => card.classList.remove('is-highlighted'));
+      clearHighlightedCards();
       renderCode();
     }
 
