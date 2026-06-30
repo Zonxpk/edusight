@@ -1,777 +1,2132 @@
 <!doctype html>
 <html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>CognitiveReplay</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="css/brand.css" />
-  <style>
-    .dashboard-shell {
-      max-width: 1480px;
-      margin: 0 auto;
-      padding: 24px;
-    }
-
-    .dashboard-header {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      margin-bottom: 20px;
-    }
-
-    .split-grid {
-      display: grid;
-      grid-template-columns: minmax(0, 1.35fr) minmax(360px, 0.95fr);
-      gap: 16px;
-      align-items: start;
-    }
-
-    .panel {
-      background: rgba(255, 255, 255, 0.88);
-      border: 1px solid rgba(20, 48, 107, 0.12);
-      border-radius: 24px;
-      box-shadow: 0 18px 40px rgba(20, 48, 107, 0.08);
-      backdrop-filter: blur(14px);
-    }
-
-    .replay-panel {
-      padding: 18px;
-      min-height: 78vh;
-    }
-
-    .insight-panel {
-      padding: 16px;
-      min-height: 78vh;
-    }
-
-    .panel-heading,
-    .replay-controls,
-    .tablist,
-    .suggestion-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-    }
-
-    .panel-title {
-      font-size: 0.82rem;
-      font-weight: 800;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      color: var(--primary);
-    }
-
-    .primary-chip,
-    .tab-button {
-      border-radius: 999px;
-      padding: 10px 14px;
-      font-weight: 700;
-      border: 1px solid transparent;
-      transition: transform 140ms ease, box-shadow 140ms ease, background 140ms ease;
-    }
-
-    .primary-chip {
-      background: var(--accent-yellow);
-      color: var(--primary);
-    }
-
-    .tab-button {
-      background: #f4f7fb;
-      color: var(--primary);
-    }
-
-    .tab-button[aria-selected="true"] {
-      background: var(--primary);
-      color: white;
-      box-shadow: 0 10px 24px rgba(20, 48, 107, 0.18);
-    }
-
-    .primary-chip:hover,
-    .tab-button:hover,
-    .recommendation-card:hover,
-    .evidence-card:hover,
-    .marker-pill:hover {
-      transform: translateY(-1px);
-    }
-
-    .timeline {
-      width: 100%;
-      accent-color: var(--accent-cyan);
-    }
-
-    .timeline-markers {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-      margin: 14px 0 12px;
-    }
-
-    .marker-pill {
-      border-radius: 999px;
-      padding: 6px 10px;
-      font-size: 0.8rem;
-      border: 1px solid var(--panel-border, #e6e0d5);
-      background: #fffdf8;
-      cursor: default;
-    }
-
-    .marker-paste { border-color: #d9b31f; }
-    .marker-cascade { border-color: var(--danger); }
-    .marker-loop { border-color: #8b5cf6; }
-    .marker-positive { border-color: var(--accent-cyan); }
-
-    .code-shell {
-      border-radius: 18px;
-      border: 1px solid rgba(20, 48, 107, 0.12);
-      background: linear-gradient(180deg, #0f172a 0%, #111b33 100%);
-      padding: 16px;
-      min-height: 54vh;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .code-shell::before {
-      content: "";
-      position: absolute;
-      inset: 0;
-      background:
-        linear-gradient(rgba(255,255,255,0.035) 1px, transparent 1px) 0 0 / 100% 28px,
-        radial-gradient(circle at top right, rgba(34, 195, 230, 0.15), transparent 45%);
-      pointer-events: none;
-    }
-
-    .code-view {
-      position: relative;
-      margin: 0;
-      color: #e5edf9;
-      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-      white-space: pre-wrap;
-      line-height: 1.7;
-      font-size: 0.95rem;
-      z-index: 1;
-      min-height: 48vh;
-    }
-
-    .line {
-      display: block;
-      border-radius: 10px;
-      padding: 0 6px;
-      transition: background 150ms ease, color 150ms ease, box-shadow 150ms ease;
-    }
-
-    .line.is-current {
-      background: rgba(34, 195, 230, 0.14);
-      box-shadow: inset 0 0 0 1px rgba(34, 195, 230, 0.2);
-    }
-
-    .line.is-preview {
-      background: rgba(255, 210, 63, 0.18);
-      box-shadow: inset 0 0 0 1px rgba(255, 210, 63, 0.28);
-    }
-
-    .line.is-preview.is-current {
-      background: linear-gradient(90deg, rgba(255, 210, 63, 0.18), rgba(34, 195, 230, 0.18));
-    }
-
-    .insight-rail {
-      margin-top: 14px;
-      display: grid;
-      gap: 12px;
-    }
-
-    .dashboard-mode-switch {
-      display: flex;
-      align-items: center;
-      justify-content: flex-start;
-      gap: 10px;
-      margin-bottom: 16px;
-      flex-wrap: wrap;
-    }
-
-    .insight-stack {
-      display: grid;
-      gap: 14px;
-    }
-
-    .insight-section {
-      display: grid;
-      gap: 10px;
-      padding: 14px;
-      border-radius: 20px;
-      border: 1px solid rgba(20, 48, 107, 0.08);
-      background: rgba(255, 255, 255, 0.72);
-    }
-
-    .section-kicker {
-      font-size: 0.72rem;
-      font-weight: 800;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      color: var(--muted);
-    }
-
-    .recommendation-rail,
-    .evidence-rail {
-      display: grid;
-      gap: 10px;
-    }
-
-    .summary-rail {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-    }
-
-    .insight-section {
-      display: grid;
-      gap: 10px;
-    }
-
-    .section-label {
-      font-size: 0.74rem;
-      text-transform: uppercase;
-      letter-spacing: 0.12em;
-      color: var(--muted);
-      font-weight: 800;
-      margin-bottom: 2px;
-    }
-
-    .recommendation-card,
-    .evidence-card {
-      border-radius: 18px;
-      padding: 16px;
-      border: 1px solid rgba(20, 48, 107, 0.12);
-      background: #fffdf8;
-      text-align: left;
-      width: 100%;
-      transition: transform 140ms ease, box-shadow 140ms ease, border-color 140ms ease;
-    }
-
-    .recommendation-card {
-      box-shadow: 0 10px 24px rgba(20, 48, 107, 0.04);
-    }
-
-    .evidence-card {
-      background: #f8fbff;
-    }
-
-    .previewable-card.is-highlighted {
-      border-color: var(--accent-cyan);
-      box-shadow: 0 0 0 2px rgba(34, 195, 230, 0.14);
-    }
-
-    .card-cue {
-      margin-top: 8px;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 6px 10px;
-      border-radius: 999px;
-      background: rgba(34, 195, 230, 0.12);
-      color: var(--primary);
-      font-size: 0.78rem;
-      font-weight: 700;
-    }
-
-    .summary-chip.risk {
-      border-color: rgba(217, 75, 75, 0.28);
-    }
-
-    .summary-chip.progress {
-      border-color: rgba(34, 195, 230, 0.28);
-    }
-
-    .summary-chip.neutral {
-      border-color: rgba(20, 48, 107, 0.12);
-    }
-
-    .summary-chip {
-      display: grid;
-      gap: 2px;
-      min-width: 130px;
-      border-radius: 16px;
-      padding: 10px 12px;
-      border: 1px solid rgba(20, 48, 107, 0.12);
-      background: rgba(244, 247, 251, 0.86);
-    }
-
-    .summary-chip .summary-label {
-      font-size: 0.74rem;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: var(--muted);
-    }
-
-    .summary-chip .summary-value {
-      font-size: 0.98rem;
-      font-weight: 700;
-      color: var(--primary);
-    }
-
-    .insight-kicker {
-      font-size: 0.72rem;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: var(--muted);
-      margin-bottom: 4px;
-    }
-
-    .insight-summary {
-      color: var(--muted);
-      font-size: 0.94rem;
-      margin-top: 4px;
-    }
-
-    .empty-note {
-      color: var(--muted);
-      font-size: 0.94rem;
-      padding: 10px 2px;
-    }
-
-    .preview-banner {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 8px 12px;
-      border-radius: 999px;
-      background: rgba(34, 195, 230, 0.12);
-      color: var(--primary);
-      font-weight: 600;
-      font-size: 0.88rem;
-    }
-
-    @media (max-width: 1024px) {
-      .split-grid {
-        grid-template-columns: 1fr;
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>EduSight</title>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/lib/codemirror.min.css"
+    />
+    <link rel="stylesheet" href="css/brand.css" />
+    <style>
+      :root {
+        --sky: #dff5ff;
+        --shell: #edf7ff;
+        --surface: rgba(255, 255, 255, 0.92);
+        --surface-strong: #ffffff;
+        --surface-soft: #f5fbff;
+        --border: rgba(20, 48, 107, 0.12);
+        --border-strong: rgba(20, 48, 107, 0.18);
+        --shadow: 0 12px 24px rgba(20, 48, 107, 0.08);
+        --toy-blue: #14306b;
+        --toy-cyan: #22c3e6;
+        --toy-yellow: #ffd23f;
+        --toy-red: #e2483a;
+        --toy-green: #24a46d;
+        --toy-wood: #f3c678;
+        --teacher-warn: #fff2b8;
+        --teacher-warn-ink: #664c00;
+        --teacher-danger: #fee4de;
+        --teacher-danger-ink: #9f2f22;
+        --teacher-progress: #ddf7ef;
+        --teacher-progress-ink: #0f6f59;
+        --parent-hero: linear-gradient(135deg, #14306b 0%, #0f8eb0 100%);
+        --parent-mint: #e8fbf3;
+        --parent-mint-ink: #0c5d48;
+        --chart-grid: rgba(148, 163, 184, 0.22);
+        --code-bg: linear-gradient(180deg, #0f172a 0%, #131d37 100%);
       }
 
-      .replay-panel,
-      .insight-panel {
-        min-height: auto;
+      * {
+        box-sizing: border-box;
       }
-    }
-  </style>
-</head>
-<body class="min-h-screen">
-  <main class="dashboard-shell">
-    <header class="dashboard-header">
-      <div class="flex items-center justify-between gap-4 flex-wrap">
-        <div>
-          <h1 class="brand-title text-4xl font-bold">CognitiveReplay</h1>
-          <p class="brand-muted text-lg mt-1">Student replay on the left, teacher/parent guidance on the right.</p>
-        </div>
-        <a href="teacher.html" class="text-sm" style="color: var(--muted)">Open legacy teacher view</a>
-      </div>
-      <div class="preview-banner">
-        Split-screen prototype
-        <span class="brand-muted">Hover a suggestion to preview related code only</span>
-      </div>
-    </header>
 
-    <section class="split-grid">
-      <article class="panel replay-panel">
-        <div class="panel-heading">
-          <div>
-            <div class="panel-title">Student Replay</div>
-            <div class="brand-muted text-sm" id="replay-meta">Frame 1 of 1</div>
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background:
+          linear-gradient(
+            140deg,
+            rgba(34, 195, 230, 0.05) 0 9%,
+            transparent 9% 100%
+          ),
+          linear-gradient(
+            222deg,
+            rgba(255, 210, 63, 0.07) 0 7%,
+            transparent 7% 100%
+          ),
+          linear-gradient(180deg, #f9fdff 0%, #f1faff 58%, #fffaf0 100%);
+        color: var(--ink);
+        font-family:
+          system-ui,
+          -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          sans-serif;
+      }
+
+      body::before {
+        content: "";
+        position: fixed;
+        inset: auto 0 0;
+        height: 72px;
+        pointer-events: none;
+        background:
+          linear-gradient(
+            90deg,
+            transparent 0 8%,
+            rgba(20, 48, 107, 0.025) 8% 15%,
+            transparent 15% 28%,
+            rgba(226, 72, 58, 0.03) 28% 35%,
+            transparent 35% 55%,
+            rgba(255, 210, 63, 0.05) 55% 63%,
+            transparent 63% 80%,
+            rgba(36, 164, 109, 0.03) 80% 88%,
+            transparent 88% 100%
+          ),
+          linear-gradient(
+            180deg,
+            transparent 0%,
+            rgba(243, 198, 120, 0.08) 58%,
+            rgba(243, 198, 120, 0.12) 100%
+          );
+        z-index: -1;
+      }
+
+      button,
+      input {
+        font: inherit;
+      }
+
+      .page {
+        max-width: 1480px;
+        margin: 0 auto;
+        padding: 28px;
+        position: relative;
+      }
+
+      .page-header {
+        display: grid;
+        gap: 18px;
+        margin-bottom: 22px;
+      }
+
+      .header-top {
+        display: flex;
+        justify-content: space-between;
+        gap: 20px;
+        align-items: flex-start;
+        flex-wrap: wrap;
+      }
+
+      .header-copy {
+        max-width: 860px;
+        display: grid;
+        gap: 10px;
+      }
+
+      .eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        width: fit-content;
+        padding: 8px 12px;
+        border-radius: 999px;
+        background: rgba(255, 210, 63, 0.42);
+        color: var(--primary);
+        font-size: 0.78rem;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+      }
+
+      .page-header h1 {
+        margin: 0;
+        color: var(--primary);
+        font-size: 3rem;
+        line-height: 1.02;
+        letter-spacing: -0.03em;
+        text-wrap: balance;
+      }
+
+      .page-header p {
+        margin: 0;
+        color: #425066;
+        font-size: 1.06rem;
+        line-height: 1.6;
+        max-width: 72ch;
+        text-wrap: pretty;
+      }
+
+      .header-metrics {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 12px;
+      }
+
+      .header-stat {
+        padding: 14px 16px;
+        border-radius: 14px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        box-shadow: var(--shadow);
+        min-width: 160px;
+      }
+
+      .header-stat:nth-child(1) {
+        border-top: 4px solid var(--toy-cyan);
+      }
+
+      .header-stat:nth-child(2) {
+        border-top: 4px solid var(--toy-yellow);
+      }
+
+      .header-stat:nth-child(3) {
+        border-top: 4px solid var(--toy-red);
+      }
+
+      .header-stat-label {
+        color: var(--muted);
+        font-size: 0.76rem;
+        font-weight: 700;
+        letter-spacing: 0.07em;
+        text-transform: uppercase;
+      }
+
+      .header-stat-value {
+        margin-top: 6px;
+        color: var(--primary);
+        font-size: 1.5rem;
+        font-weight: 800;
+        line-height: 1.05;
+      }
+
+      .header-stat-note {
+        margin-top: 4px;
+        color: #556277;
+        font-size: 0.88rem;
+      }
+
+      .hero-banner {
+        display: grid;
+        grid-template-columns: 1.35fr 0.95fr;
+        gap: 14px;
+        padding: 16px;
+        border-radius: 16px;
+        border: 1px solid var(--border);
+        background:
+          linear-gradient(90deg, rgba(255, 210, 63, 0.16), transparent 34%),
+          rgba(255, 255, 255, 0.78);
+      }
+
+      .hero-banner-card {
+        position: relative;
+        overflow: hidden;
+        padding: 18px;
+        border-radius: 14px;
+        background: linear-gradient(
+          135deg,
+          rgba(20, 48, 107, 0.98),
+          rgba(15, 142, 176, 0.96)
+        );
+        color: #eff6ff;
+      }
+
+      .hero-banner-card::after {
+        content: "";
+        position: absolute;
+        right: 18px;
+        bottom: -18px;
+        width: 112px;
+        height: 72px;
+        background: linear-gradient(
+          90deg,
+          var(--toy-red) 0 32%,
+          var(--toy-yellow) 32% 66%,
+          var(--toy-green) 66% 100%
+        );
+        border-radius: 12px 12px 0 0;
+        opacity: 0.26;
+        transform: rotate(-3deg);
+      }
+
+      .hero-banner-card strong {
+        display: block;
+        font-size: 1.04rem;
+        margin-bottom: 6px;
+      }
+
+      .hero-banner-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+      }
+
+      .hero-mini {
+        padding: 16px;
+        border-radius: 14px;
+        background: var(--surface-strong);
+        border: 1px solid var(--border);
+      }
+
+      .hero-mini-title {
+        font-size: 0.76rem;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+
+      .hero-mini-value {
+        margin-top: 6px;
+        color: var(--primary);
+        font-size: 1.36rem;
+        font-weight: 800;
+      }
+
+      .main-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1.28fr) minmax(380px, 0.92fr);
+        gap: 18px;
+        align-items: start;
+      }
+
+      .panel {
+        border-radius: 16px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        box-shadow: var(--shadow);
+        backdrop-filter: blur(10px);
+      }
+
+      .replay-panel {
+        padding: 18px;
+        display: grid;
+        gap: 16px;
+        min-height: 78vh;
+      }
+
+      .panel-head {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        align-items: flex-start;
+        flex-wrap: wrap;
+      }
+
+      .panel-head h2,
+      .right-panel h2 {
+        margin: 0;
+        font-size: 1.36rem;
+        color: var(--primary);
+      }
+
+      .panel-kicker {
+        color: var(--muted);
+        font-size: 0.78rem;
+        font-weight: 700;
+        letter-spacing: 0.07em;
+        text-transform: uppercase;
+      }
+
+      .panel-subtitle {
+        margin-top: 4px;
+        color: #556277;
+        font-size: 0.95rem;
+      }
+
+      .head-actions {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 9px 12px;
+        border-radius: 999px;
+        background: rgba(34, 195, 230, 0.14);
+        color: var(--primary);
+        font-size: 0.86rem;
+        font-weight: 700;
+      }
+
+      .button-primary,
+      .tab-button,
+      .event-chip,
+      .story-item,
+      .evidence-item {
+        transition:
+          background-color 160ms ease,
+          border-color 160ms ease,
+          color 160ms ease,
+          transform 160ms ease;
+      }
+
+      .button-primary {
+        border: none;
+        border-radius: 999px;
+        padding: 10px 16px;
+        background: linear-gradient(180deg, #ffe070, var(--toy-yellow));
+        color: var(--primary);
+        font-weight: 800;
+        cursor: pointer;
+        box-shadow: 0 3px 0 rgba(20, 48, 107, 0.18);
+      }
+
+      .button-primary:hover,
+      .tab-button:hover,
+      .event-chip:hover,
+      .story-item:hover,
+      .evidence-item:hover {
+        transform: translateY(-1px);
+      }
+
+      .code-stage {
+        display: grid;
+        gap: 14px;
+      }
+
+      .timeline {
+        width: 100%;
+        accent-color: var(--accent-cyan);
+      }
+
+      .event-chip-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .event-chip {
+        border: 1px solid var(--border);
+        background: #fff;
+        border-radius: 999px;
+        padding: 8px 12px;
+        color: #455366;
+        font-size: 0.84rem;
+        font-weight: 700;
+        cursor: pointer;
+      }
+
+      .event-chip[data-tone="warning"] {
+        background: var(--teacher-warn);
+        color: var(--teacher-warn-ink);
+        border-color: rgba(255, 210, 63, 0.46);
+      }
+
+      .event-chip[data-tone="danger"] {
+        background: var(--teacher-danger);
+        color: var(--teacher-danger-ink);
+        border-color: rgba(226, 72, 58, 0.28);
+      }
+
+      .event-chip[data-tone="progress"] {
+        background: var(--teacher-progress);
+        color: var(--teacher-progress-ink);
+        border-color: rgba(24, 150, 116, 0.25);
+      }
+
+      .event-chip.is-active {
+        box-shadow: inset 0 0 0 1px rgba(20, 48, 107, 0.18);
+      }
+
+      .code-shell {
+        position: relative;
+        overflow: hidden;
+        border-radius: 16px;
+        border: 1px solid rgba(130, 154, 191, 0.22);
+        background: var(--code-bg);
+        min-height: 58vh;
+      }
+
+      .code-shell::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background:
+          linear-gradient(
+            135deg,
+            transparent 0 72%,
+            rgba(255, 210, 63, 0.12) 72% 84%,
+            transparent 84% 100%
+          ),
+          linear-gradient(225deg, rgba(34, 195, 230, 0.16), transparent 34%);
+        pointer-events: none;
+        z-index: 1;
+      }
+
+      .code-shell .CodeMirror {
+        position: relative;
+        z-index: 2;
+        min-height: 58vh;
+        height: 58vh;
+        background: transparent;
+        color: #e5edf9;
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        font-size: 0.94rem;
+        line-height: 1.7;
+      }
+
+      .code-shell .CodeMirror-scroll {
+        min-height: 58vh;
+      }
+
+      .code-shell .CodeMirror-lines {
+        padding: 18px 0;
+      }
+
+      .code-shell .CodeMirror pre.CodeMirror-line,
+      .code-shell .CodeMirror pre.CodeMirror-line-like {
+        padding: 0 18px;
+      }
+
+      .code-shell .CodeMirror-gutters {
+        border-right: 1px solid rgba(130, 154, 191, 0.18);
+        background: rgba(15, 23, 42, 0.32);
+      }
+
+      .code-shell .CodeMirror-linenumber {
+        color: rgba(203, 213, 225, 0.7);
+        padding: 0 12px 0 10px;
+      }
+
+      .code-shell .CodeMirror-cursor {
+        border-left-color: #e5edf9;
+      }
+
+      .code-shell .cm-keyword {
+        color: #7dd3fc;
+      }
+
+      .code-shell .cm-def,
+      .code-shell .cm-variable {
+        color: #e5edf9;
+      }
+
+      .code-shell .cm-number,
+      .code-shell .cm-builtin {
+        color: #fde68a;
+      }
+
+      .code-shell .cm-current-line {
+        background: rgba(34, 195, 230, 0.16);
+        box-shadow: inset 0 0 0 1px rgba(34, 195, 230, 0.26);
+      }
+
+      .code-shell .cm-preview-line {
+        background: rgba(255, 210, 63, 0.18);
+        box-shadow: inset 0 0 0 1px rgba(255, 210, 63, 0.24);
+      }
+
+      .code-shell .cm-current-line.cm-preview-line {
+        background: linear-gradient(
+          90deg,
+          rgba(255, 210, 63, 0.16),
+          rgba(34, 195, 230, 0.18)
+        );
+      }
+
+      .code-shell .cm-current-preview-line {
+        background: linear-gradient(
+          90deg,
+          rgba(255, 210, 63, 0.16),
+          rgba(34, 195, 230, 0.18)
+        );
+      }
+
+      .replay-footer {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 12px;
+      }
+
+      .footer-card {
+        padding: 14px;
+        border-radius: 14px;
+        background: var(--surface-strong);
+        border: 1px solid var(--border);
+      }
+
+      .footer-card-label {
+        color: var(--muted);
+        font-size: 0.74rem;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+      }
+
+      .footer-card strong {
+        display: block;
+        margin-top: 6px;
+        color: var(--primary);
+        font-size: 1rem;
+      }
+
+      .footer-card p {
+        margin: 6px 0 0;
+        color: #5a687d;
+        font-size: 0.88rem;
+        line-height: 1.5;
+      }
+
+      .right-panel {
+        padding: 16px;
+        height: 78vh;
+        display: grid;
+        grid-template-rows: auto auto minmax(0, 1fr);
+        gap: 14px;
+        overflow: hidden;
+      }
+
+      .tab-row {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+
+      .tab-button {
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        padding: 10px 14px;
+        background: #fff;
+        color: var(--primary);
+        font-weight: 800;
+        cursor: pointer;
+      }
+
+      .tab-button[aria-selected="true"] {
+        background: var(--primary);
+        color: #fff;
+        border-color: var(--primary);
+        box-shadow: 0 3px 0 rgba(34, 195, 230, 0.28);
+      }
+
+      .insight-grid {
+        display: grid;
+        gap: 12px;
+        grid-auto-rows: max-content;
+        align-content: start;
+        min-height: 0;
+        overflow-y: auto;
+        padding-right: 4px;
+      }
+
+      .insight-card {
+        border-radius: 14px;
+        border: 1px solid var(--border);
+        background: var(--surface-strong);
+        overflow: hidden;
+      }
+
+      .hero-card {
+        padding: 18px;
+        display: grid;
+        gap: 12px;
+      }
+
+      .hero-card.teacher {
+        background: linear-gradient(
+          135deg,
+          rgba(255, 210, 63, 0.38) 0%,
+          rgba(255, 255, 255, 0.9) 54%,
+          rgba(34, 195, 230, 0.12) 100%
+        );
+      }
+
+      .hero-card.parent {
+        background: var(--parent-hero);
+        color: #f8fbff;
+      }
+
+      .hero-card-top {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        align-items: flex-start;
+        flex-wrap: wrap;
+      }
+
+      .status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        border-radius: 999px;
+        padding: 8px 12px;
+        font-size: 0.78rem;
+        font-weight: 800;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+      }
+
+      .status-badge.warning {
+        background: rgba(255, 210, 63, 0.18);
+        color: #7d5d00;
+      }
+
+      .status-badge.progress {
+        background: rgba(214, 250, 240, 0.24);
+        color: inherit;
+      }
+
+      .hero-title {
+        margin: 0;
+        font-size: 1.34rem;
+        line-height: 1.16;
+        text-wrap: balance;
+      }
+
+      .hero-copy {
+        margin: 0;
+        font-size: 0.96rem;
+        line-height: 1.55;
+        color: inherit;
+        opacity: 0.92;
+      }
+
+      .hero-meta {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      .hero-meta-card {
+        padding: 12px;
+        border-radius: 14px;
+        background: rgba(255, 255, 255, 0.7);
+        border: 1px solid rgba(20, 48, 107, 0.1);
+        color: var(--primary);
+      }
+
+      .hero-card.parent .hero-meta-card {
+        background: rgba(255, 255, 255, 0.08);
+        border-color: rgba(255, 255, 255, 0.12);
+        color: #f8fbff;
+      }
+
+      .hero-meta-label {
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        opacity: 0.72;
+      }
+
+      .hero-meta-value {
+        margin-top: 5px;
+        font-size: 1.14rem;
+        font-weight: 800;
+      }
+
+      .block-head {
+        padding: 14px 16px 0;
+        display: flex;
+        justify-content: space-between;
+        gap: 10px;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+
+      .block-title {
+        color: var(--primary);
+        font-size: 1rem;
+        font-weight: 800;
+      }
+
+      .block-note {
+        color: #556277;
+        font-size: 0.86rem;
+      }
+
+      .story-list {
+        padding: 14px 16px 16px;
+        display: grid;
+        gap: 10px;
+      }
+
+      .story-item {
+        display: grid;
+        grid-template-columns: auto 1fr auto;
+        gap: 12px;
+        align-items: center;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 12px 14px;
+        background: #fff;
+        cursor: pointer;
+        text-align: left;
+      }
+
+      .story-item.is-highlighted,
+      .evidence-item.is-highlighted {
+        border-color: rgba(34, 195, 230, 0.38);
+        background: linear-gradient(90deg, #f3fbff, #fff9df);
+      }
+
+      .story-dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 999px;
+      }
+
+      .story-copy strong {
+        display: block;
+        font-size: 0.94rem;
+        color: var(--primary);
+      }
+
+      .story-copy span {
+        display: block;
+        margin-top: 4px;
+        color: #57657a;
+        font-size: 0.84rem;
+        line-height: 1.45;
+      }
+
+      .story-time {
+        color: var(--muted);
+        font-size: 0.82rem;
+        font-weight: 700;
+        white-space: nowrap;
+      }
+
+      .chart-card {
+        padding: 16px;
+        display: grid;
+        gap: 14px;
+      }
+
+      .chart-layout {
+        display: grid;
+        grid-template-columns: 1.1fr 0.9fr;
+        gap: 14px;
+        align-items: stretch;
+      }
+
+      .chart-pane,
+      .score-pane {
+        border-radius: 14px;
+        border: 1px solid var(--border);
+        background: var(--surface-soft);
+        padding: 14px;
+      }
+
+      .chart-bars {
+        display: flex;
+        align-items: end;
+        gap: 10px;
+        min-height: 128px;
+        margin-top: 14px;
+      }
+
+      .chart-bar-group {
+        flex: 1;
+        display: grid;
+        gap: 8px;
+        justify-items: center;
+      }
+
+      .chart-bar-track {
+        width: 100%;
+        min-height: 110px;
+        border-radius: 12px 12px 0 0;
+        background: linear-gradient(
+          180deg,
+          rgba(255, 255, 255, 0.56),
+          rgba(207, 220, 237, 0.42)
+        );
+        display: flex;
+        align-items: end;
+        padding: 0 6px;
+      }
+
+      .chart-bar {
+        width: 100%;
+        border-radius: 10px 10px 0 0;
+      }
+
+      .chart-label {
+        color: #556277;
+        font-size: 0.78rem;
+        font-weight: 700;
+      }
+
+      .score-pane {
+        display: grid;
+        gap: 12px;
+        align-content: start;
+      }
+
+      .score-value {
+        color: var(--primary);
+        font-size: 2.7rem;
+        font-weight: 900;
+        line-height: 1;
+      }
+
+      .score-note {
+        color: #536074;
+        font-size: 0.9rem;
+        line-height: 1.5;
+      }
+
+      .score-trend {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        width: fit-content;
+        padding: 8px 12px;
+        border-radius: 999px;
+        background: rgba(34, 195, 230, 0.12);
+        color: var(--primary);
+        font-size: 0.82rem;
+        font-weight: 800;
+      }
+
+      .metric-grid {
+        padding: 16px;
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      .metric-card {
+        border-radius: 14px;
+        padding: 14px;
+        border: 1px solid var(--border);
+        background: #fff;
+      }
+
+      .metric-label {
+        color: var(--muted);
+        font-size: 0.75rem;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+      }
+
+      .metric-value {
+        margin-top: 6px;
+        color: var(--primary);
+        font-size: 1.52rem;
+        font-weight: 850;
+        line-height: 1.05;
+      }
+
+      .metric-note {
+        margin-top: 6px;
+        color: #566478;
+        font-size: 0.84rem;
+        line-height: 1.45;
+      }
+
+      .evidence-list {
+        padding: 0 16px 16px;
+        display: grid;
+        gap: 10px;
+      }
+
+      .evidence-item {
+        width: 100%;
+        text-align: left;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 12px 14px;
+        background: #fff;
+        cursor: pointer;
+      }
+
+      .evidence-item strong {
+        display: block;
+        color: var(--primary);
+        font-size: 0.92rem;
+      }
+
+      .evidence-item span {
+        display: block;
+        margin-top: 5px;
+        color: #57657a;
+        font-size: 0.84rem;
+        line-height: 1.46;
+      }
+
+      @media (max-width: 1180px) {
+        .hero-banner,
+        .main-grid,
+        .chart-layout {
+          grid-template-columns: 1fr;
+        }
+
+        .right-panel {
+          height: auto;
+          overflow: visible;
+        }
+
+        .insight-grid {
+          overflow: visible;
+          padding-right: 0;
+        }
+
+        .replay-footer,
+        .hero-meta,
+        .header-metrics {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+      }
+
+      @media (max-width: 760px) {
+        .page {
+          padding: 18px;
+        }
+
+        .page-header h1 {
+          font-size: 2.3rem;
+        }
+
+        .header-metrics,
+        .hero-banner-grid,
+        .replay-footer,
+        .hero-meta,
+        .metric-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .story-item {
+          grid-template-columns: auto 1fr;
+        }
+
+        .story-time {
+          grid-column: 2;
+        }
+
+        .code-shell .CodeMirror {
+          font-size: 0.86rem;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+          animation: none !important;
+          transition: none !important;
+          scroll-behavior: auto !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="page">
+      <header class="page-header">
+        <div class="header-top">
+          <div class="header-copy">
+            <div class="eyebrow">Editor intelligence for classrooms</div>
+            <h1>
+              EduSight turns raw editor behavior into intervention signals.
+            </h1>
+            <p>
+              Watch the student build inside a web editor on the left, then read
+              the same session two ways on the right: operationally for
+              teachers, and as progression evidence for parents.
+            </p>
           </div>
-          <button id="play-toggle" class="primary-chip">Play</button>
         </div>
 
-        <div class="replay-controls mt-4">
-          <input id="timeline" class="timeline" type="range" min="0" max="0" value="0" step="1" />
-        </div>
+        <div class="header-metrics" id="header-metrics"></div>
 
-        <div id="timeline-markers" class="timeline-markers" aria-label="Replay events"></div>
-
-        <div id="code-shell" class="code-shell">
-          <pre id="code-view" class="code-view">(loading)</pre>
-        </div>
-      </article>
-
-      <aside class="panel insight-panel">
-        <div class="dashboard-mode-switch" role="tablist" aria-label="Insight views">
-          <button id="tab-teacher" role="tab" aria-selected="true" class="tab-button">Teacher</button>
-          <button id="tab-parent" role="tab" aria-selected="false" class="tab-button">Parent</button>
-        </div>
-
-        <section class="insight-stack">
-          <div class="insight-section">
-            <div class="section-kicker">Recommended next steps</div>
-            <div id="recommendation-rail" class="recommendation-rail"></div>
+        <section class="hero-banner">
+          <div class="hero-banner-card">
+            <strong>Storyboard-led hybrid demo</strong>
+            This version keeps the editor playback cinematic, but the right rail
+            now behaves like a real dashboard. Alerts, charted behavior,
+            time-travel playback, and resilience metrics all point to the same
+            moments in the web editor.
           </div>
-
-          <div class="insight-section">
-            <div class="section-kicker">Supporting evidence</div>
-            <div id="evidence-rail" class="evidence-rail"></div>
-          </div>
-
-          <div class="insight-section">
-            <div class="section-kicker">Behavior summary</div>
-            <div id="summary-rail" class="summary-rail"></div>
+          <div class="hero-banner-grid">
+            <div class="hero-mini">
+              <div class="hero-mini-title">Teacher Value</div>
+              <div class="hero-mini-value">Spot logic breakdowns fast</div>
+            </div>
+            <div class="hero-mini">
+              <div class="hero-mini-title">Parent Value</div>
+              <div class="hero-mini-value">See grit, not just grades</div>
+            </div>
           </div>
         </section>
-      </aside>
-    </section>
-  </main>
+      </header>
 
-  <script>
-    const session = {
-      studentId: 'Demo',
-      events: [
-        { type: 'text_change', action: 'insert', delta: 'def solve(n):', timeSpentMs: 1500, timestamp: 1, line: 1 },
-        { type: 'text_change', action: 'insert', delta: '\n    return fib(n)', timeSpentMs: 1400, timestamp: 2, line: 2 },
-        { type: 'execution', status: 'failed', error: 'NameError: fib is not defined', timestamp: 3, line: 2, snapshot: 'def solve(n):\n    return fib(n)' },
-        { type: 'text_change', action: 'delete_cascade', delta: 'def solve(n):\n    return fib(n)', timeSpentMs: 600, timestamp: 4, line: 1 },
-        { type: 'execution', status: 'failed', error: 'NameError: fib is not defined', timestamp: 5, line: 2, snapshot: 'def solve(n):\n    return fib(n + 1)' },
-        { type: 'execution', status: 'failed', error: 'NameError: fib is not defined', timestamp: 6, line: 2, snapshot: 'def solve(n):\n    return fib(n + 2)' },
-        { type: 'text_change', action: 'insert', delta: '\nhelper = build_cache()', timeSpentMs: 3600, timestamp: 7, line: 3 },
-      ],
-    };
+      <section class="main-grid">
+        <article class="panel replay-panel">
+          <div class="panel-head">
+            <div>
+              <div class="panel-kicker">Web Editor Time-Travel Viewer</div>
+              <h2>Student Editor Session</h2>
+              <div class="panel-subtitle" id="replay-meta">Frame 1 of 1</div>
+            </div>
+            <div class="head-actions">
+              <div class="pill" id="playback-note">
+                Hover a signal to preview that moment
+              </div>
+              <button id="play-toggle" class="button-primary">Play</button>
+            </div>
+          </div>
 
-    const state = {
-      frames: [],
-      playhead: 0,
-      previewLine: null,
-      activeTab: 'teacher',
-      timer: null,
-      playing: false,
-    };
+          <div class="code-stage">
+            <input
+              id="timeline"
+              class="timeline"
+              type="range"
+              min="0"
+              max="0"
+              value="0"
+              step="1"
+              aria-label="Editor session timeline"
+            />
+            <div
+              id="timeline-markers"
+              class="event-chip-row"
+              aria-label="Editor event markers"
+            ></div>
+            <div class="code-shell">
+              <textarea
+                id="code-view"
+                class="code-view"
+                aria-label="Student code replay"
+              >
+(loading)</textarea
+              >
+            </div>
+          </div>
 
-    const insightViews = {
-      teacher: {
-        title: 'Teacher',
-        recommendations: [
+          <div class="replay-footer" id="replay-footer"></div>
+        </article>
+
+        <aside class="panel right-panel">
+          <div class="panel-head">
+            <div>
+              <div class="panel-kicker">Audience Lens</div>
+              <h2>Intelligence Rail</h2>
+              <div class="panel-subtitle">
+                Same editor session, reframed for intervention or progress.
+              </div>
+            </div>
+          </div>
+
+          <div class="tab-row" role="tablist" aria-label="Insight views">
+            <button
+              id="tab-teacher"
+              class="tab-button"
+              role="tab"
+              aria-selected="true"
+            >
+              Teacher Dashboard
+            </button>
+            <button
+              id="tab-parent"
+              class="tab-button"
+              role="tab"
+              aria-selected="false"
+            >
+              Parent Portal
+            </button>
+          </div>
+
+          <section class="insight-grid">
+            <div id="hero-card" class="insight-card"></div>
+            <div class="insight-card">
+              <div class="block-head">
+                <div class="block-title">Session Storyline</div>
+                <div class="block-note" id="story-note">
+                  Behavior sequence tied to editor moments
+                </div>
+              </div>
+              <div id="story-list" class="story-list"></div>
+            </div>
+            <div class="insight-card chart-card">
+              <div class="block-head" style="padding: 0">
+                <div class="block-title" id="chart-title">Behavior Pattern</div>
+                <div class="block-note" id="chart-note">Signals over time</div>
+              </div>
+              <div class="chart-layout">
+                <div class="chart-pane">
+                  <div class="panel-kicker" id="chart-kicker">
+                    Behavior intensity
+                  </div>
+                  <div id="chart-bars" class="chart-bars"></div>
+                </div>
+                <div class="score-pane">
+                  <div class="panel-kicker" id="score-kicker">
+                    Debugging resilience score
+                  </div>
+                  <div id="score-value" class="score-value">72</div>
+                  <div id="score-note" class="score-note"></div>
+                  <div id="score-trend" class="score-trend"></div>
+                </div>
+              </div>
+            </div>
+            <div class="insight-card">
+              <div class="block-head">
+                <div class="block-title" id="metrics-title">
+                  Actionable Metrics
+                </div>
+                <div class="block-note" id="metrics-note">
+                  Classroom-ready counts and timings
+                </div>
+              </div>
+              <div id="metric-grid" class="metric-grid"></div>
+              <div class="block-head">
+                <div class="block-title" id="evidence-title">
+                  Why This Was Flagged
+                </div>
+                <div class="block-note">
+                  Hover an item to preview the linked line
+                </div>
+              </div>
+              <div id="evidence-list" class="evidence-list"></div>
+            </div>
+          </section>
+        </aside>
+      </section>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/lib/codemirror.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/mode/python/python.min.js"></script>
+    <script>
+      const session = {
+        studentId: "Student A",
+        startedAt: "10:12",
+        events: [
           {
-            id: 'debug-persistence',
-            title: 'Build debugging persistence',
-            summary: 'The student keeps re-attempting the same approach after failure.',
-            cue: 'High retry count',
-            previewLine: 2,
-            evidence: [
-              { label: 'Repeated failed runs', frame: 5, line: 2, kind: 'risk' },
-              { label: 'Reset after error', frame: 3, line: 1, kind: 'risk' },
-            ],
+            type: "text_change",
+            action: "paste",
+            delta:
+              "def solve(n):\n    total = 0\n    for i in range(n):\n        total += fib(i)\n    return total",
+            timeSpentMs: 300,
+            timestamp: 1,
+            line: 1,
           },
           {
-            id: 'slow-down',
-            title: 'Slow down after errors',
-            summary: 'The edit pattern suggests fast reactions instead of a deliberate repair step.',
-            cue: 'Rushed recovery',
-            previewLine: 2,
-            evidence: [
-              { label: 'Short repair window', frame: 4, line: 2, kind: 'risk' },
-              { label: 'Repeated near-match attempt', frame: 6, line: 2, kind: 'risk' },
-            ],
+            type: "execution",
+            status: "failed",
+            error: "NameError: name 'fib' is not defined",
+            timestamp: 2,
+            line: 3,
+            snapshot:
+              "def solve(n):\n    total = 0\n    for i in range(n):\n        total += fib(i)\n    return total",
           },
           {
-            id: 'reduce-shortcuts',
-            title: 'Reduce shortcut-heavy editing',
-            summary: 'A large change appears to reset the workspace instead of refining it.',
-            cue: 'Reset-heavy pattern',
-            previewLine: 1,
-            evidence: [
-              { label: 'Paste shockwave', frame: 1, line: 1, kind: 'risk' },
-              { label: 'Delete cascade', frame: 3, line: 1, kind: 'risk' },
-            ],
+            type: "text_change",
+            action: "delete_cascade",
+            delta: "    for i in range(n):\n        total += fib(i)",
+            timeSpentMs: 900,
+            timestamp: 4,
+            line: 3,
+          },
+          {
+            type: "text_change",
+            action: "insert",
+            delta: "\n    total += i",
+            timeSpentMs: 1200,
+            timestamp: 7,
+            line: 3,
+          },
+          {
+            type: "execution",
+            status: "failed",
+            error: "IndentationError: expected an indented block",
+            timestamp: 15,
+            line: 3,
+            snapshot:
+              "def solve(n):\n    total = 0\n    total += i\n    return total",
+          },
+          {
+            type: "text_change",
+            action: "insert",
+            delta: "\n    for i in range(n):",
+            timeSpentMs: 900,
+            timestamp: 17,
+            line: 3,
+          },
+          {
+            type: "execution",
+            status: "failed",
+            error: "NameError: name 'i' is not defined",
+            timestamp: 22,
+            line: 4,
+            snapshot:
+              "def solve(n):\n    total = 0\n    for i in range(n):\n    total += i\n    return total",
+          },
+          {
+            type: "text_change",
+            action: "insert",
+            delta: "\n        total += i",
+            timeSpentMs: 41000,
+            timestamp: 64,
+            line: 4,
+          },
+          {
+            type: "execution",
+            status: "success",
+            output: "10",
+            timestamp: 88,
+            line: 5,
+            snapshot:
+              "def solve(n):\n    total = 0\n    for i in range(n):\n        total += i\n    return total",
           },
         ],
-        summary: [
-          { label: 'Debugging persistence', value: 'Low', tone: 'risk' },
-          { label: 'Edit stability', value: 'Mixed', tone: 'neutral' },
-          { label: 'Recovery after error', value: 'Needs support', tone: 'risk' },
-        ],
-      },
-      parent: {
-        title: 'Parent',
-        recommendations: [
-          {
-            id: 'stay-with-problem',
-            title: 'Practice staying with the problem',
-            summary: 'The student is still learning how to recover after mistakes without starting over.',
-            cue: 'Growth opportunity',
-            previewLine: 2,
-            evidence: [
-              { label: 'Repeated failed runs', frame: 5, line: 2, kind: 'risk' },
-              { label: 'Thoughtful follow-up edit', frame: 7, line: 3, kind: 'progress' },
-            ],
-          },
-          {
-            id: 'encourage-pause',
-            title: 'Encourage a pause after errors',
-            summary: 'A little more reflection may help the student make smaller, more useful repairs.',
-            cue: 'Builds confidence',
-            previewLine: 3,
-            evidence: [
-              { label: 'Short repair window', frame: 4, line: 2, kind: 'risk' },
-              { label: 'Repeated near-match attempt', frame: 6, line: 2, kind: 'risk' },
-            ],
-          },
-          {
-            id: 'favor-careful-edits',
-            title: 'Favor careful edits over resets',
-            summary: 'The student benefits from smaller changes that keep progress visible.',
-            cue: 'Keep momentum',
-            previewLine: 1,
-            evidence: [
-              { label: 'Paste shockwave', frame: 1, line: 1, kind: 'risk' },
-              { label: 'Recovery edit', frame: 7, line: 3, kind: 'progress' },
-            ],
-          },
-        ],
-        summary: [
-          { label: 'Recovery after error', value: 'Developing', tone: 'progress' },
-          { label: 'Thoughtful pacing', value: 'Inconsistent', tone: 'neutral' },
-          { label: 'Editing confidence', value: 'Building', tone: 'progress' },
-        ],
-      },
-    };
+      };
 
-    function buildFrames(events) {
-      const frames = [];
-      let buffer = [];
+      const state = {
+        frames: [],
+        playhead: 0,
+        previewLine: null,
+        previewFrame: null,
+        activeTab: "teacher",
+        timer: null,
+        playing: false,
+        metrics: null,
+        activeEventId: null,
+        editor: null,
+        lineDecorations: [],
+      };
 
-      for (const event of events) {
-        if (event.type === 'text_change' && event.action === 'insert') {
-          buffer.push(event.delta);
-          frames.push({
-            kind: 'insert',
-            text: buffer.join(''),
-            line: event.line,
-          });
-          continue;
+      function buildFrames(events) {
+        const frames = [];
+        let buffer = [];
+
+        for (const event of events) {
+          if (event.type === "text_change") {
+            if (event.action === "paste" || event.action === "insert") {
+              buffer = applyDelta(buffer.join("\n"), event.delta).split("\n");
+              frames.push({
+                kind: event.action,
+                text: buffer.join("\n"),
+                line: event.line,
+                timestamp: event.timestamp,
+              });
+            }
+
+            if (event.action === "delete_cascade") {
+              const previous = buffer.join("\n");
+              buffer = removeFirstMatch(previous, event.delta).split("\n");
+              frames.push({
+                kind: "delete_cascade",
+                text: buffer.join("\n"),
+                line: event.line,
+                timestamp: event.timestamp,
+              });
+            }
+
+            continue;
+          }
+
+          if (event.type === "execution") {
+            frames.push({
+              kind:
+                event.status === "success"
+                  ? "execution-success"
+                  : "execution-failed",
+              text: event.snapshot || buffer.join("\n") || "(no code recorded)",
+              line: event.line,
+              timestamp: event.timestamp,
+            });
+          }
         }
 
-        if (event.type === 'text_change' && event.action === 'delete_cascade') {
-          buffer = [];
-          frames.push({
-            kind: 'delete_cascade',
-            text: '(workspace cleared)',
-            line: event.line,
-          });
-          continue;
-        }
-
-        if (event.type === 'execution') {
-          frames.push({
-            kind: event.status === 'failed' ? 'execution-failed' : 'execution-success',
-            text: event.snapshot || buffer.join('\n') || '(no code recorded)',
-            line: event.line,
-          });
-        }
+        return frames.length
+          ? frames
+          : [
+              {
+                kind: "empty",
+                text: "(no code recorded)",
+                line: 1,
+                timestamp: 0,
+              },
+            ];
       }
 
-      return frames.length ? frames : [{ kind: 'empty', text: '(no code recorded)', line: 1 }];
-    }
+      function applyDelta(base, delta) {
+        if (!base) return delta;
+        return `${base}${delta.startsWith("\n") ? "" : "\n"}${delta}`;
+      }
 
-    function buildLines(text) {
-      return text.split('\n').map((line, index) => `<span class="line" data-line="${index + 1}">${line || '&nbsp;'}</span>`).join('');
-    }
+      function removeFirstMatch(base, snippet) {
+        if (!base) return "";
+        const index = base.indexOf(snippet);
+        if (index === -1) return base;
+        return `${base.slice(0, index)}${base.slice(index + snippet.length)}`
+          .replace(/\n{3,}/g, "\n\n")
+          .trimEnd();
+      }
 
-    function getInsightView() {
-      return insightViews[state.activeTab];
-    }
+      function snapshotDifference(a, b) {
+        const left = a || "";
+        const right = b || "";
+        let diff = Math.abs(left.length - right.length);
+        const limit = Math.min(left.length, right.length);
+        for (let index = 0; index < limit; index += 1) {
+          if (left[index] !== right[index]) diff += 1;
+        }
+        return diff;
+      }
 
-    function renderSummaryChip(item) {
-      return `
-        <div class="summary-chip ${item.tone}">
-          <div class="summary-label">${item.label}</div>
-          <div class="summary-value">${item.value}</div>
+      function minutesSeconds(seconds) {
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        return mins ? `${mins}m ${secs}s` : `${secs}s`;
+      }
+
+      function computeSessionMetrics(sessionData) {
+        const executions = sessionData.events.filter(
+          (event) => event.type === "execution",
+        );
+        const failedExecutions = executions.filter(
+          (event) => event.status === "failed",
+        );
+        const successfulExecutions = executions.filter(
+          (event) => event.status === "success",
+        );
+        const pasteEvent = sessionData.events.find(
+          (event) => event.type === "text_change" && event.action === "paste",
+        );
+        const deleteEvent = sessionData.events.find(
+          (event) =>
+            event.type === "text_change" && event.action === "delete_cascade",
+        );
+
+        const trialWindow = executions.slice(0, 3);
+        const trialErrorFlagged =
+          trialWindow.length === 3 &&
+          trialWindow[2].timestamp - trialWindow[0].timestamp <= 60 &&
+          snapshotDifference(
+            trialWindow[0].snapshot || "",
+            trialWindow[1].snapshot || "",
+          ) < 3 &&
+          snapshotDifference(
+            trialWindow[1].snapshot || "",
+            trialWindow[2].snapshot || "",
+          ) < 3;
+
+        const panicIndicator = Boolean(
+          deleteEvent &&
+          failedExecutions[0] &&
+          deleteEvent.timestamp - failedExecutions[0].timestamp <= 3 &&
+          (deleteEvent.delta || "").length >= 20,
+        );
+
+        const averageDebugPauseMs = Math.round(
+          failedExecutions.reduce((total, execution) => {
+            const nextEdit = sessionData.events.find(
+              (event) =>
+                event.type === "text_change" &&
+                event.timestamp > execution.timestamp &&
+                typeof event.timeSpentMs === "number",
+            );
+            return total + (nextEdit ? nextEdit.timeSpentMs : 0);
+          }, 0) / failedExecutions.length,
+        );
+
+        const independentRecoveries = successfulExecutions.length;
+        const gritDelta = 15;
+        const resilienceScore = 72;
+
+        return {
+          pasteCharacters: (pasteEvent?.delta || "").length,
+          pasteEvent,
+          deleteEvent,
+          failedExecutions,
+          successfulExecutions,
+          trialErrorFlagged,
+          panicIndicator,
+          averageDebugPauseMs,
+          independentRecoveries,
+          resilienceScore,
+          gritDelta,
+          totalErrors: failedExecutions.length,
+          totalRuns: executions.length,
+          totalSignals: [
+            trialErrorFlagged,
+            panicIndicator,
+            Boolean(pasteEvent),
+          ].filter(Boolean).length,
+        };
+      }
+
+      function buildInsights(metrics) {
+        const teacherHero = {
+          badge: "Intervention alert",
+          badgeTone: "warning",
+          title: "Trial & Error Flagger triggered",
+          copy: "Three runs landed inside 60 seconds with only tiny code changes. The student is likely nudging symbols around instead of tracing the program logic.",
+          meta: [
+            { label: "Run burst", value: "3 in 60s" },
+            { label: "Edit delta", value: "< 3 chars" },
+            { label: "Coach move", value: "Ask what fib() should do" },
+          ],
+        };
+
+        const parentHero = {
+          badge: "Progress narrative",
+          badgeTone: "progress",
+          title: "Your child stayed with the problem longer than last session.",
+          copy: `They hit ${metrics.totalErrors} execution errors, but kept repairing the code and reached a working solution. Average reflection time before a repair was ${Math.round(metrics.averageDebugPauseMs / 1000)} seconds.`,
+          meta: [
+            {
+              label: "Resilience score",
+              value: String(metrics.resilienceScore),
+            },
+            { label: "Grit change", value: `+${metrics.gritDelta}%` },
+            { label: "Independent finish", value: "Yes" },
+          ],
+        };
+
+        return {
+          teacher: {
+            hero: teacherHero,
+            storyNote: "Behavior incidents tied to exact editor moments",
+            chart: {
+              title: "Behavior pattern",
+              note: "Risk signals across the session",
+              kicker: "Flag intensity",
+              scoreKicker: "Intervention priority",
+              scoreValue: "High",
+              scoreNote:
+                "Two high-risk behaviors appeared before the student recovered: blind retries and panic deletion.",
+              scoreTrend: "Step in before the next run",
+            },
+            story: [
+              {
+                id: "paste",
+                frame: 0,
+                line: 1,
+                time: "10:12",
+                color: "#facc15",
+                title: "Paste shockwave",
+                summary: `A ${metrics.pasteCharacters}-character block appeared instantly, suggesting copied structure instead of typed reasoning.`,
+              },
+              {
+                id: "panic",
+                frame: 2,
+                line: 3,
+                time: "10:14",
+                color: "#ef4444",
+                title: "Panic indicator",
+                summary:
+                  "Within 3 seconds of an error, an entire loop block vanished. The student likely did not understand the compiler message.",
+              },
+              {
+                id: "loop",
+                frame: 6,
+                line: 4,
+                time: "10:15",
+                color: "#f97316",
+                title: "Trial & error loop",
+                summary:
+                  "Repeated runs happened with near-identical snapshots, which points to guesswork rather than debugging.",
+              },
+              {
+                id: "recover",
+                frame: 7,
+                line: 4,
+                time: "10:17",
+                color: "#22c55e",
+                title: "Recovery edit",
+                summary:
+                  "A slower, more deliberate indentation fix finally aligned the loop and led toward a valid result.",
+              },
+            ],
+            chartBars: [
+              { label: "Paste", value: 62, color: "#facc15" },
+              { label: "Delete", value: 78, color: "#ef4444" },
+              { label: "Retries", value: 70, color: "#f97316" },
+              { label: "Recovery", value: 44, color: "#22c55e" },
+            ],
+            metrics: [
+              {
+                label: "Run bursts",
+                value: "3",
+                note: "Near-identical executions in one minute.",
+              },
+              {
+                label: "Large deletes",
+                value: "1",
+                note: `${metrics.deleteEvent?.delta.length || 0} characters removed immediately after failure.`,
+              },
+              {
+                label: "Paste events",
+                value: "1",
+                note: "A structural block appeared instantly.",
+              },
+              {
+                label: "Avg debug pause",
+                value: minutesSeconds(
+                  Math.round(metrics.averageDebugPauseMs / 1000),
+                ),
+                note: "Time spent before the next repair attempt.",
+              },
+            ],
+            evidenceTitle: "Why this was flagged",
+            metricsTitle: "Actionable metrics",
+            metricsNote: "What the teacher can scan in seconds",
+            evidence: [
+              {
+                id: "ev-run",
+                frame: 6,
+                line: 4,
+                title: "Repeated failed runs",
+                summary:
+                  "The same NameError pattern persisted across multiple executions with almost no semantic change.",
+              },
+              {
+                id: "ev-delete",
+                frame: 2,
+                line: 3,
+                title: "Delete after failure",
+                summary:
+                  "A full logical block disappeared almost immediately after the first compiler message.",
+              },
+              {
+                id: "ev-paste",
+                frame: 0,
+                line: 1,
+                title: "Large paste arrival",
+                summary:
+                  "The initial solution skeleton entered in one burst instead of being assembled incrementally.",
+              },
+            ],
+          },
+          parent: {
+            hero: parentHero,
+            storyNote: "The same session, translated into growth language",
+            chart: {
+              title: "Resilience pattern",
+              note: "How the student handled setbacks",
+              kicker: "Persistence markers",
+              scoreKicker: "Debugging resilience score",
+              scoreValue: String(metrics.resilienceScore),
+              scoreNote: `The student spent an average of ${Math.round(metrics.averageDebugPauseMs / 1000)} seconds thinking through each bug before making the next useful change.`,
+              scoreTrend: `+${metrics.gritDelta}% vs last week`,
+            },
+            story: [
+              {
+                id: "start",
+                frame: 0,
+                line: 1,
+                time: "10:12",
+                color: "#38bdf8",
+                title: "Started confidently",
+                summary:
+                  "The student began with a full idea of the solution, even though some of it still needed understanding.",
+              },
+              {
+                id: "setback",
+                frame: 2,
+                line: 3,
+                time: "10:14",
+                color: "#f59e0b",
+                title: "Hit a setback",
+                summary:
+                  "An error led to a sudden reset, showing a moment of uncertainty instead of steady debugging.",
+              },
+              {
+                id: "rethink",
+                frame: 7,
+                line: 4,
+                time: "10:17",
+                color: "#14b8a6",
+                title: "Paused to rethink",
+                summary:
+                  "A much longer pause appeared before the next edit, which suggests more careful reasoning.",
+              },
+              {
+                id: "finish",
+                frame: 8,
+                line: 5,
+                time: "10:18",
+                color: "#22c55e",
+                title: "Recovered independently",
+                summary:
+                  "The student eventually repaired the loop and reached a working answer without outside intervention.",
+              },
+            ],
+            chartBars: [
+              { label: "Confidence", value: 54, color: "#38bdf8" },
+              { label: "Setback", value: 68, color: "#f59e0b" },
+              { label: "Reflection", value: 76, color: "#14b8a6" },
+              { label: "Recovery", value: 82, color: "#22c55e" },
+            ],
+            metrics: [
+              {
+                label: "Errors faced",
+                value: String(metrics.totalErrors),
+                note: "Problems the student encountered instead of avoiding.",
+              },
+              {
+                label: "Avg thinking time",
+                value: minutesSeconds(
+                  Math.round(metrics.averageDebugPauseMs / 1000),
+                ),
+                note: "Reflection time before the next repair.",
+              },
+              {
+                label: "Independent recoveries",
+                value: String(metrics.independentRecoveries),
+                note: "Times the student got back on track alone.",
+              },
+              {
+                label: "Grit change",
+                value: `+${metrics.gritDelta}%`,
+                note: "Stronger persistence than the prior session.",
+              },
+            ],
+            evidenceTitle: "Progress takeaway",
+            metricsTitle: "Growth markers",
+            metricsNote:
+              "Translating technical struggle into meaningful progress",
+            evidence: [
+              {
+                id: "pv-errors",
+                frame: 6,
+                line: 4,
+                title: "Faced repeated errors",
+                summary: `Your child saw ${metrics.totalErrors} execution errors today and still kept working.`,
+              },
+              {
+                id: "pv-pause",
+                frame: 7,
+                line: 4,
+                title: "Stayed with the bug",
+                summary:
+                  "The longest pause happened before the repair that actually improved the loop, which shows patience instead of quitting.",
+              },
+              {
+                id: "pv-win",
+                frame: 8,
+                line: 5,
+                title: "Reached a working result",
+                summary:
+                  "The session ended in a valid output, turning confusion into a finished solution.",
+              },
+            ],
+          },
+        };
+      }
+
+      function renderHeaderMetrics(metrics) {
+        const items = [
+          {
+            label: "Flags detected",
+            value: metrics.totalSignals,
+            note: "trial loop, panic delete, paste shockwave",
+          },
+          {
+            label: "Avg debug pause",
+            value: minutesSeconds(
+              Math.round(metrics.averageDebugPauseMs / 1000),
+            ),
+            note: "before the next repair attempt",
+          },
+          {
+            label: "Parent grit change",
+            value: `+${metrics.gritDelta}%`,
+            note: "resilience improvement this week",
+          },
+        ];
+
+        document.getElementById("header-metrics").innerHTML = items
+          .map(
+            (item) => `
+        <div class="header-stat">
+          <div class="header-stat-label">${item.label}</div>
+          <div class="header-stat-value">${item.value}</div>
+          <div class="header-stat-note">${item.note}</div>
+        </div>
+      `,
+          )
+          .join("");
+      }
+
+      function getView() {
+        return state.views[state.activeTab];
+      }
+
+      function renderReplayFooter(metrics) {
+        const items = [
+          {
+            label: "Paste Shockwave",
+            title: `${metrics.pasteCharacters} characters in one burst`,
+            copy: "A large structural block appeared instantly, which often suggests AI or peer copying.",
+          },
+          {
+            label: "Panic Indicator",
+            title: metrics.panicIndicator
+              ? "Triggered within 3 seconds"
+              : "Not triggered",
+            copy: "The loop block was erased immediately after a compiler error instead of being debugged.",
+          },
+          {
+            label: "Resilience Score",
+            title: `${metrics.resilienceScore} and rising`,
+            copy: "After early guesswork, the student slowed down and made the repair that mattered.",
+          },
+        ];
+
+        document.getElementById("replay-footer").innerHTML = items
+          .map(
+            (item) => `
+        <div class="footer-card">
+          <div class="footer-card-label">${item.label}</div>
+          <strong>${item.title}</strong>
+          <p>${item.copy}</p>
+        </div>
+      `,
+          )
+          .join("");
+      }
+
+      function renderMarkers() {
+        const markers = getView().story.map((item) => {
+          const tone =
+            item.id === "panic" || item.id === "setback"
+              ? "danger"
+              : item.id === "recover" ||
+                  item.id === "finish" ||
+                  item.id === "rethink"
+                ? "progress"
+                : "warning";
+          return `<button class="event-chip" data-event-id="${item.id}" data-frame="${item.frame}" data-line="${item.line}" data-tone="${tone}">${item.title}</button>`;
+        });
+
+        document.getElementById("timeline-markers").innerHTML =
+          markers.join("");
+      }
+
+      function initEditor() {
+        state.editor = CodeMirror.fromTextArea(
+          document.getElementById("code-view"),
+          {
+            mode: "python",
+            lineNumbers: true,
+            readOnly: "nocursor",
+            viewportMargin: Infinity,
+            lineWrapping: false,
+            tabSize: 4,
+            indentUnit: 4,
+          },
+        );
+      }
+
+      function clearLineDecorations() {
+        state.lineDecorations.forEach((decoration) => {
+          state.editor.removeLineClass(
+            decoration.line,
+            "background",
+            decoration.className,
+          );
+        });
+        state.lineDecorations = [];
+      }
+
+      function addLineDecoration(lineNumber, className) {
+        const lineIndex = Math.max(
+          0,
+          Math.min(state.editor.lineCount() - 1, lineNumber - 1),
+        );
+        state.editor.addLineClass(lineIndex, "background", className);
+        state.lineDecorations.push({ line: lineIndex, className });
+      }
+
+      function renderCode() {
+        const frame = state.frames[state.playhead];
+        clearLineDecorations();
+        state.editor.setValue(frame.text);
+        if (state.previewLine === frame.line) {
+          addLineDecoration(frame.line, "cm-current-preview-line");
+        } else {
+          addLineDecoration(frame.line, "cm-current-line");
+          if (state.previewLine)
+            addLineDecoration(state.previewLine, "cm-preview-line");
+        }
+        state.editor.refresh();
+
+        document.getElementById("replay-meta").textContent =
+          `Frame ${state.playhead + 1} of ${state.frames.length} · ${frame.kind.replace("-", " ")} at ${session.startedAt}`;
+        document.getElementById("timeline").value = String(state.playhead);
+        updateMarkerHighlights();
+      }
+
+      function renderHero() {
+        const view = getView();
+        const hero = view.hero;
+        document.getElementById("hero-card").innerHTML = `
+        <div class="hero-card ${state.activeTab}">
+          <div class="hero-card-top">
+            <div>
+              <div class="status-badge ${hero.badgeTone}">${hero.badge}</div>
+              <h3 class="hero-title">${hero.title}</h3>
+            </div>
+            <div class="pill">${state.activeTab === "teacher" ? "Needs teacher attention" : "Visible progress arc"}</div>
+          </div>
+          <p class="hero-copy">${hero.copy}</p>
+          <div class="hero-meta">
+            ${hero.meta
+              .map(
+                (item) => `
+              <div class="hero-meta-card">
+                <div class="hero-meta-label">${item.label}</div>
+                <div class="hero-meta-value">${item.value}</div>
+              </div>
+            `,
+              )
+              .join("")}
+          </div>
         </div>
       `;
-    }
+      }
 
-    function renderRecommendationCard(recommendation, viewTitle) {
-      return `
-        <button class="recommendation-card previewable-card" data-preview-line="${recommendation.previewLine}" data-kind="recommendation" data-id="${recommendation.id}">
-          <div class="insight-kicker">${viewTitle} recommendation</div>
-          <div class="font-semibold">${recommendation.title}</div>
-          <div class="insight-summary">${recommendation.summary}</div>
-          <div class="card-cue">${recommendation.cue}</div>
+      function renderStory() {
+        const view = getView();
+        document.getElementById("story-note").textContent = view.storyNote;
+        document.getElementById("story-list").innerHTML = view.story
+          .map(
+            (item) => `
+        <button class="story-item previewable" data-frame="${item.frame}" data-line="${item.line}" data-event-id="${item.id}">
+          <span class="story-dot" style="background:${item.color}"></span>
+          <span class="story-copy">
+            <strong>${item.title}</strong>
+            <span>${item.summary}</span>
+          </span>
+          <span class="story-time">${item.time}</span>
         </button>
-      `;
-    }
+      `,
+          )
+          .join("");
+      }
 
-    function renderEvidenceCard(recommendation, evidence) {
-      return `
-        <button class="evidence-card previewable-card" data-preview-line="${evidence.line}" data-kind="${evidence.kind}" data-id="${recommendation.id}-${evidence.label}">
-          <div class="insight-kicker">${evidence.kind === 'progress' ? 'Progress signal' : 'Behavior evidence'}</div>
-          <div class="font-semibold">${evidence.label}</div>
-          <div class="insight-summary">Frame ${evidence.frame} · ${recommendation.title}</div>
+      function renderChart() {
+        const view = getView();
+        document.getElementById("chart-title").textContent = view.chart.title;
+        document.getElementById("chart-note").textContent = view.chart.note;
+        document.getElementById("chart-kicker").textContent = view.chart.kicker;
+        document.getElementById("score-kicker").textContent =
+          view.chart.scoreKicker;
+        document.getElementById("score-value").textContent =
+          view.chart.scoreValue;
+        document.getElementById("score-note").textContent =
+          view.chart.scoreNote;
+        document.getElementById("score-trend").textContent =
+          view.chart.scoreTrend;
+        document.getElementById("chart-bars").innerHTML = view.chartBars
+          .map(
+            (item) => `
+        <div class="chart-bar-group">
+          <div class="chart-bar-track">
+            <div class="chart-bar" style="height:${item.value}%; background:${item.color}"></div>
+          </div>
+          <div class="chart-label">${item.label}</div>
+        </div>
+      `,
+          )
+          .join("");
+      }
+
+      function renderMetrics() {
+        const view = getView();
+        document.getElementById("metrics-title").textContent =
+          view.metricsTitle;
+        document.getElementById("metrics-note").textContent = view.metricsNote;
+        document.getElementById("metric-grid").innerHTML = view.metrics
+          .map(
+            (item) => `
+        <div class="metric-card">
+          <div class="metric-label">${item.label}</div>
+          <div class="metric-value">${item.value}</div>
+          <div class="metric-note">${item.note}</div>
+        </div>
+      `,
+          )
+          .join("");
+      }
+
+      function renderEvidence() {
+        const view = getView();
+        document.getElementById("evidence-title").textContent =
+          view.evidenceTitle;
+        document.getElementById("evidence-list").innerHTML = view.evidence
+          .map(
+            (item) => `
+        <button class="evidence-item previewable" data-frame="${item.frame}" data-line="${item.line}" data-event-id="${item.id}">
+          <strong>${item.title}</strong>
+          <span>${item.summary}</span>
         </button>
-      `;
-    }
-
-    function renderMarkers() {
-      const markers = [
-        { label: 'Paste', className: 'marker-paste', frame: 1 },
-        { label: 'Cascade', className: 'marker-cascade', frame: 3 },
-        { label: 'Loop', className: 'marker-loop', frame: 5 },
-        { label: 'Positive', className: 'marker-positive', frame: 6 },
-      ];
-
-      document.getElementById('timeline-markers').innerHTML = markers
-        .map(marker => `<span class="marker-pill ${marker.className}" data-frame="${marker.frame}">${marker.label}</span>`)
-        .join('');
-    }
-
-    function renderCode() {
-      const frame = state.frames[state.playhead];
-      const shell = document.getElementById('code-shell');
-      const codeView = document.getElementById('code-view');
-
-      codeView.innerHTML = buildLines(frame.text);
-
-      const lines = codeView.querySelectorAll('.line');
-      lines.forEach(line => {
-        const lineNo = Number(line.dataset.line);
-        line.classList.toggle('is-current', lineNo === frame.line);
-        line.classList.toggle('is-preview', state.previewLine === lineNo);
-      });
-
-      shell.classList.toggle('is-preview', state.previewLine != null);
-      document.getElementById('replay-meta').textContent = `Frame ${state.playhead + 1} of ${state.frames.length}`;
-      document.getElementById('timeline').value = String(state.playhead);
-    }
-
-    function renderRecommendations() {
-      const rail = document.getElementById('recommendation-rail');
-      const view = getInsightView();
-
-      if (!view.recommendations.length) {
-        rail.innerHTML = '<p class="empty-note">No recommendations for this session.</p>';
-        return;
+      `,
+          )
+          .join("");
       }
 
-      rail.innerHTML = view.recommendations.map(recommendation => renderRecommendationCard(recommendation, view.title)).join('');
-    }
-
-    function renderEvidence() {
-      const rail = document.getElementById('evidence-rail');
-      const view = getInsightView();
-      const evidenceItems = view.recommendations.flatMap(recommendation => recommendation.evidence.map(evidence => ({ recommendation, evidence })));
-
-      if (!evidenceItems.length) {
-        rail.innerHTML = '<p class="empty-note">No supporting evidence for this session.</p>';
-        return;
+      function renderInsights() {
+        renderMarkers();
+        renderHero();
+        renderStory();
+        renderChart();
+        renderMetrics();
+        renderEvidence();
+        bindPreviewables();
+        updateMarkerHighlights();
       }
 
-      rail.innerHTML = evidenceItems.map(({ recommendation, evidence }) => renderEvidenceCard(recommendation, evidence)).join('');
-    }
-
-    function renderSummary() {
-      const rail = document.getElementById('summary-rail');
-      const view = getInsightView();
-
-      if (!view.summary.length) {
-        rail.innerHTML = '<p class="empty-note">No behavior summary for this session.</p>';
-        return;
-      }
-
-      rail.innerHTML = view.summary.map(renderSummaryChip).join('');
-    }
-
-    function bindPreviewCards() {
-      document.querySelectorAll('.previewable-card').forEach(card => {
-        card.addEventListener('mouseenter', () => {
-          clearHighlightedCards();
-          const line = Number(card.dataset.previewLine);
-          state.previewLine = line;
-          card.classList.add('is-highlighted');
-          renderCode();
+      function updateMarkerHighlights() {
+        document.querySelectorAll(".event-chip").forEach((button) => {
+          const frame = Number(button.dataset.frame);
+          const eventId = button.dataset.eventId;
+          const active =
+            state.playhead === frame || state.activeEventId === eventId;
+          button.classList.toggle("is-active", active);
         });
-
-        card.addEventListener('mouseleave', () => {
-          clearPreview();
-        });
-      });
-    }
-
-    function clearHighlightedCards() {
-      document.querySelectorAll('.previewable-card').forEach(card => card.classList.remove('is-highlighted'));
-    }
-
-    function renderInsights() {
-      renderRecommendations();
-      renderEvidence();
-      renderSummary();
-      bindPreviewCards();
-    }
-
-    function clearPreview() {
-      state.previewLine = null;
-      clearHighlightedCards();
-      renderCode();
-    }
-
-    function setPlayhead(index) {
-      state.playhead = Math.max(0, Math.min(state.frames.length - 1, index));
-      renderCode();
-    }
-
-    function togglePlayback() {
-      state.playing = !state.playing;
-      document.getElementById('play-toggle').textContent = state.playing ? 'Pause' : 'Play';
-
-      if (!state.playing) {
-        window.clearInterval(state.timer);
-        state.timer = null;
-        return;
       }
 
-      state.timer = window.setInterval(() => {
-        if (state.playhead >= state.frames.length - 1) {
-          state.playing = false;
-          document.getElementById('play-toggle').textContent = 'Play';
+      function clearHighlights() {
+        document
+          .querySelectorAll(".previewable")
+          .forEach((node) => node.classList.remove("is-highlighted"));
+        state.activeEventId = null;
+      }
+
+      function applyPreview(frame, line, eventId, sourceNode) {
+        clearHighlights();
+        state.previewFrame = frame;
+        state.previewLine = line;
+        state.activeEventId = eventId;
+        if (sourceNode) sourceNode.classList.add("is-highlighted");
+        setPlayhead(frame, { preservePreview: true });
+        document.getElementById("playback-note").textContent =
+          `Previewing ${eventId.replaceAll("-", " ")} on line ${line}`;
+      }
+
+      function clearPreview() {
+        state.previewFrame = null;
+        state.previewLine = null;
+        state.activeEventId = null;
+        document.getElementById("playback-note").textContent =
+          "Hover a signal to preview that moment";
+        clearHighlights();
+        renderCode();
+      }
+
+      function bindPreviewables() {
+        document.querySelectorAll(".previewable").forEach((node) => {
+          node.addEventListener("mouseenter", () => {
+            applyPreview(
+              Number(node.dataset.frame),
+              Number(node.dataset.line),
+              node.dataset.eventId,
+              node,
+            );
+          });
+          node.addEventListener("mouseleave", clearPreview);
+        });
+      }
+
+      function setPlayhead(index, options = {}) {
+        state.playhead = Math.max(0, Math.min(state.frames.length - 1, index));
+        if (!options.preservePreview) {
+          state.previewFrame = null;
+          state.previewLine = null;
+        }
+        renderCode();
+      }
+
+      function togglePlayback() {
+        state.playing = !state.playing;
+        document.getElementById("play-toggle").textContent = state.playing
+          ? "Pause"
+          : "Play";
+
+        if (!state.playing) {
           window.clearInterval(state.timer);
           state.timer = null;
           return;
         }
-        setPlayhead(state.playhead + 1);
-      }, 900);
-    }
 
-    function setActiveTab(tab) {
-      state.activeTab = tab;
-      document.getElementById('tab-teacher').setAttribute('aria-selected', String(tab === 'teacher'));
-      document.getElementById('tab-parent').setAttribute('aria-selected', String(tab === 'parent'));
-      renderInsights();
-      clearPreview();
-    }
+        state.timer = window.setInterval(() => {
+          if (state.playhead >= state.frames.length - 1) {
+            state.playing = false;
+            document.getElementById("play-toggle").textContent = "Play";
+            window.clearInterval(state.timer);
+            state.timer = null;
+            return;
+          }
+          setPlayhead(state.playhead + 1);
+        }, 950);
+      }
 
-    function bindEvents() {
-      document.getElementById('play-toggle').addEventListener('click', togglePlayback);
-      document.getElementById('timeline').addEventListener('input', event => {
-        setPlayhead(Number(event.target.value));
-      });
-      document.getElementById('tab-teacher').addEventListener('click', () => setActiveTab('teacher'));
-      document.getElementById('tab-parent').addEventListener('click', () => setActiveTab('parent'));
-
-      document.getElementById('timeline-markers').addEventListener('mouseenter', event => {
-        const marker = event.target.closest('.marker-pill');
-        if (!marker) return;
-        const frame = Number(marker.dataset.frame);
-        state.previewLine = frame === 1 ? 2 : frame === 3 ? 1 : frame === 5 ? 2 : 3;
-        renderCode();
-      }, true);
-
-      document.getElementById('timeline-markers').addEventListener('mouseleave', () => {
+      function setActiveTab(tab) {
+        state.activeTab = tab;
+        document
+          .getElementById("tab-teacher")
+          .setAttribute("aria-selected", String(tab === "teacher"));
+        document
+          .getElementById("tab-parent")
+          .setAttribute("aria-selected", String(tab === "parent"));
+        renderInsights();
         clearPreview();
-      });
-    }
+      }
 
-    function init() {
-      state.frames = buildFrames(session.events);
-      document.getElementById('timeline').max = String(state.frames.length - 1);
-      renderMarkers();
-      renderInsights();
-      renderCode();
-      bindEvents();
-    }
+      function bindEvents() {
+        document
+          .getElementById("play-toggle")
+          .addEventListener("click", togglePlayback);
+        document
+          .getElementById("timeline")
+          .addEventListener("input", (event) => {
+            setPlayhead(Number(event.target.value));
+          });
+        document
+          .getElementById("tab-teacher")
+          .addEventListener("click", () => setActiveTab("teacher"));
+        document
+          .getElementById("tab-parent")
+          .addEventListener("click", () => setActiveTab("parent"));
+        document.getElementById("timeline-markers").addEventListener(
+          "mouseenter",
+          (event) => {
+            const button = event.target.closest(".event-chip");
+            if (!button) return;
+            applyPreview(
+              Number(button.dataset.frame),
+              Number(button.dataset.line),
+              button.dataset.eventId,
+              null,
+            );
+          },
+          true,
+        );
+        document
+          .getElementById("timeline-markers")
+          .addEventListener("mouseleave", clearPreview);
+      }
 
-    init();
-  </script>
-</body>
+      function init() {
+        state.frames = buildFrames(session.events);
+        state.metrics = computeSessionMetrics(session);
+        state.views = buildInsights(state.metrics);
+        initEditor();
+        document.getElementById("timeline").max = String(
+          state.frames.length - 1,
+        );
+        renderHeaderMetrics(state.metrics);
+        renderReplayFooter(state.metrics);
+        renderInsights();
+        renderCode();
+        bindEvents();
+      }
+
+      init();
+    </script>
+  </body>
 </html>

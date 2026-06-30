@@ -1,19 +1,29 @@
 :root {
-  --bg: #f7f4ec;          /* light beige / off-white */
-  --primary: #14306b;     /* deep blue */
+  --bg: #f5f9ff;
+  --primary: #14306b;
   --accent-cyan: #22c3e6;
   --accent-yellow: #ffd23f;
+  --toy-red: #e2483a;
+  --toy-green: #22a06b;
+  --toy-wood: #f3c678;
   --danger: #e2483a;
   --ink: #1c2433;
   --muted: #6b7280;
 }
-body { background: var(--bg); color: var(--ink); font-family: system-ui, sans-serif; }
+body {
+  background:
+    linear-gradient(135deg, rgba(34, 195, 230, 0.035) 0 10%, transparent 10% 100%),
+    linear-gradient(225deg, rgba(255, 210, 63, 0.055) 0 8%, transparent 8% 100%),
+    linear-gradient(180deg, #f8fcff 0%, var(--bg) 72%, #fffaf0 100%);
+  color: var(--ink);
+  font-family: system-ui, sans-serif;
+}
 .brand-title { color: var(--primary); }
 
 /* Teacher alert cards */
 .alert { border-radius: 10px; padding: 14px 16px; margin-bottom: 10px; font-size: 0.95rem; }
-.alert-warning { background: #fff7e0; border-left: 5px solid var(--accent-yellow); }
-.alert-critical { background: #fdecea; border-left: 5px solid var(--danger); }
+.alert-warning { background: #fff7dd; border: 1px solid rgba(255, 210, 63, 0.55); }
+.alert-critical { background: #fdecea; border: 1px solid rgba(226, 72, 58, 0.32); }
 
 /* Class matrix scatter */
 .matrix { position: relative; width: 100%; height: 360px; background: #fff;
