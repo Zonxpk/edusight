@@ -6,23 +6,681 @@
   <title>CognitiveReplay</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="css/brand.css" />
+  <style>
+    .dashboard-shell {
+      max-width: 1480px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    .dashboard-header {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .split-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.35fr) minmax(360px, 0.95fr);
+      gap: 16px;
+      align-items: start;
+    }
+
+    .panel {
+      background: rgba(255, 255, 255, 0.88);
+      border: 1px solid rgba(20, 48, 107, 0.12);
+      border-radius: 24px;
+      box-shadow: 0 18px 40px rgba(20, 48, 107, 0.08);
+      backdrop-filter: blur(14px);
+    }
+
+    .replay-panel {
+      padding: 18px;
+      min-height: 78vh;
+    }
+
+    .insight-panel {
+      padding: 16px;
+      min-height: 78vh;
+    }
+
+    .panel-heading,
+    .replay-controls,
+    .tablist,
+    .suggestion-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .panel-title {
+      font-size: 0.82rem;
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--primary);
+    }
+
+    .primary-chip,
+    .tab-button {
+      border-radius: 999px;
+      padding: 10px 14px;
+      font-weight: 700;
+      border: 1px solid transparent;
+      transition: transform 140ms ease, box-shadow 140ms ease, background 140ms ease;
+    }
+
+    .primary-chip {
+      background: var(--accent-yellow);
+      color: var(--primary);
+    }
+
+    .tab-button {
+      background: #f4f7fb;
+      color: var(--primary);
+    }
+
+    .tab-button[aria-selected="true"] {
+      background: var(--primary);
+      color: white;
+      box-shadow: 0 10px 24px rgba(20, 48, 107, 0.18);
+    }
+
+    .primary-chip:hover,
+    .tab-button:hover,
+    .insight-card:hover,
+    .marker-pill:hover {
+      transform: translateY(-1px);
+    }
+
+    .timeline {
+      width: 100%;
+      accent-color: var(--accent-cyan);
+    }
+
+    .timeline-markers {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin: 14px 0 12px;
+    }
+
+    .marker-pill {
+      border-radius: 999px;
+      padding: 6px 10px;
+      font-size: 0.8rem;
+      border: 1px solid var(--panel-border, #e6e0d5);
+      background: #fffdf8;
+      cursor: default;
+    }
+
+    .marker-paste { border-color: #d9b31f; }
+    .marker-cascade { border-color: var(--danger); }
+    .marker-loop { border-color: #8b5cf6; }
+    .marker-positive { border-color: var(--accent-cyan); }
+
+    .code-shell {
+      border-radius: 18px;
+      border: 1px solid rgba(20, 48, 107, 0.12);
+      background: linear-gradient(180deg, #0f172a 0%, #111b33 100%);
+      padding: 16px;
+      min-height: 54vh;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .code-shell::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(rgba(255,255,255,0.035) 1px, transparent 1px) 0 0 / 100% 28px,
+        radial-gradient(circle at top right, rgba(34, 195, 230, 0.15), transparent 45%);
+      pointer-events: none;
+    }
+
+    .code-view {
+      position: relative;
+      margin: 0;
+      color: #e5edf9;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      white-space: pre-wrap;
+      line-height: 1.7;
+      font-size: 0.95rem;
+      z-index: 1;
+      min-height: 48vh;
+    }
+
+    .line {
+      display: block;
+      border-radius: 10px;
+      padding: 0 6px;
+      transition: background 150ms ease, color 150ms ease, box-shadow 150ms ease;
+    }
+
+    .line.is-current {
+      background: rgba(34, 195, 230, 0.14);
+      box-shadow: inset 0 0 0 1px rgba(34, 195, 230, 0.2);
+    }
+
+    .line.is-preview {
+      background: rgba(255, 210, 63, 0.18);
+      box-shadow: inset 0 0 0 1px rgba(255, 210, 63, 0.28);
+    }
+
+    .line.is-preview.is-current {
+      background: linear-gradient(90deg, rgba(255, 210, 63, 0.18), rgba(34, 195, 230, 0.18));
+    }
+
+    .insight-rail {
+      margin-top: 14px;
+      display: grid;
+      gap: 12px;
+    }
+
+    .insight-section {
+      display: grid;
+      gap: 10px;
+    }
+
+    .section-label {
+      font-size: 0.74rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--muted);
+      font-weight: 800;
+      margin-bottom: 2px;
+    }
+
+    .insight-card {
+      border-radius: 18px;
+      padding: 14px;
+      border: 1px solid rgba(20, 48, 107, 0.12);
+      background: #fffdf8;
+      text-align: left;
+      width: 100%;
+      transition: transform 140ms ease, box-shadow 140ms ease, border-color 140ms ease;
+    }
+
+    .insight-card.is-highlighted {
+      border-color: var(--accent-cyan);
+      box-shadow: 0 0 0 2px rgba(34, 195, 230, 0.14);
+    }
+
+    .insight-cue {
+      margin-top: 6px;
+      font-size: 0.76rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .insight-evidence {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .evidence-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border-radius: 999px;
+      padding: 6px 10px;
+      font-size: 0.8rem;
+      border: 1px solid rgba(20, 48, 107, 0.12);
+      background: rgba(244, 247, 251, 0.86);
+      color: var(--primary);
+    }
+
+    .evidence-pill[data-kind="progress"] {
+      border-color: rgba(34, 195, 230, 0.28);
+      background: rgba(34, 195, 230, 0.08);
+    }
+
+    .summary-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .summary-chip {
+      display: grid;
+      gap: 2px;
+      min-width: 130px;
+      border-radius: 16px;
+      padding: 10px 12px;
+      border: 1px solid rgba(20, 48, 107, 0.12);
+      background: rgba(244, 247, 251, 0.86);
+    }
+
+    .summary-chip .summary-label {
+      font-size: 0.74rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+    }
+
+    .summary-chip .summary-value {
+      font-size: 0.98rem;
+      font-weight: 700;
+      color: var(--primary);
+    }
+
+    .insight-kicker {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+
+    .insight-summary {
+      color: var(--muted);
+      font-size: 0.94rem;
+      margin-top: 4px;
+    }
+
+    .empty-note {
+      color: var(--muted);
+      font-size: 0.94rem;
+      padding: 10px 2px;
+    }
+
+    .preview-banner {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(34, 195, 230, 0.12);
+      color: var(--primary);
+      font-weight: 600;
+      font-size: 0.88rem;
+    }
+
+    @media (max-width: 1024px) {
+      .split-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .replay-panel,
+      .insight-panel {
+        min-height: auto;
+      }
+    }
+  </style>
 </head>
 <body class="min-h-screen">
-  <main class="max-w-3xl mx-auto px-6 py-16">
-    <h1 class="brand-title text-4xl font-bold mb-2">CognitiveReplay</h1>
-    <p class="text-lg" style="color: var(--muted)">
-      IDE Telemetry Sandbox &amp; AI Behavior Diagnostic Engine
-    </p>
-    <div class="grid sm:grid-cols-2 gap-6 mt-10">
-      <a href="teacher.html" class="block bg-white rounded-xl p-6 shadow hover:shadow-lg transition">
-        <h2 class="text-xl font-semibold brand-title">Teacher Panel →</h2>
-        <p class="mt-2" style="color: var(--muted)">Live anomaly alerts and the class behavior matrix.</p>
-      </a>
-      <a href="parent.html" class="block bg-white rounded-xl p-6 shadow hover:shadow-lg transition">
-        <h2 class="text-xl font-semibold brand-title">Parent Portal →</h2>
-        <p class="mt-2" style="color: var(--muted)">Timeline replay and cognitive mastery badges.</p>
-      </a>
-    </div>
+  <main class="dashboard-shell">
+    <header class="dashboard-header">
+      <div class="flex items-center justify-between gap-4 flex-wrap">
+        <div>
+          <h1 class="brand-title text-4xl font-bold">CognitiveReplay</h1>
+          <p class="brand-muted text-lg mt-1">Student replay on the left, teacher/parent guidance on the right.</p>
+        </div>
+        <a href="teacher.html" class="text-sm" style="color: var(--muted)">Open legacy teacher view</a>
+      </div>
+      <div class="preview-banner">
+        Split-screen prototype
+        <span class="brand-muted">Hover a suggestion to preview related code only</span>
+      </div>
+    </header>
+
+    <section class="split-grid">
+      <article class="panel replay-panel">
+        <div class="panel-heading">
+          <div>
+            <div class="panel-title">Student Replay</div>
+            <div class="brand-muted text-sm" id="replay-meta">Frame 1 of 1</div>
+          </div>
+          <button id="play-toggle" class="primary-chip">Play</button>
+        </div>
+
+        <div class="replay-controls mt-4">
+          <input id="timeline" class="timeline" type="range" min="0" max="0" value="0" step="1" />
+        </div>
+
+        <div id="timeline-markers" class="timeline-markers" aria-label="Replay events"></div>
+
+        <div id="code-shell" class="code-shell">
+          <pre id="code-view" class="code-view">(loading)</pre>
+        </div>
+      </article>
+
+      <aside class="panel insight-panel">
+        <div class="tablist" role="tablist" aria-label="Insight views">
+          <button id="tab-teacher" role="tab" aria-selected="true" class="tab-button">Teacher</button>
+          <button id="tab-parent" role="tab" aria-selected="false" class="tab-button">Parent</button>
+        </div>
+        <div id="insight-rail" class="insight-rail"></div>
+      </aside>
+    </section>
   </main>
+
+  <script>
+    const session = {
+      studentId: 'Demo',
+      events: [
+        { type: 'text_change', action: 'insert', delta: 'def solve(n):', timeSpentMs: 1500, timestamp: 1, line: 1 },
+        { type: 'text_change', action: 'insert', delta: '\n    return fib(n)', timeSpentMs: 1400, timestamp: 2, line: 2 },
+        { type: 'execution', status: 'failed', error: 'NameError: fib is not defined', timestamp: 3, line: 2, snapshot: 'def solve(n):\n    return fib(n)' },
+        { type: 'text_change', action: 'delete_cascade', delta: 'def solve(n):\n    return fib(n)', timeSpentMs: 600, timestamp: 4, line: 1 },
+        { type: 'execution', status: 'failed', error: 'NameError: fib is not defined', timestamp: 5, line: 2, snapshot: 'def solve(n):\n    return fib(n + 1)' },
+        { type: 'execution', status: 'failed', error: 'NameError: fib is not defined', timestamp: 6, line: 2, snapshot: 'def solve(n):\n    return fib(n + 2)' },
+        { type: 'text_change', action: 'insert', delta: '\nhelper = build_cache()', timeSpentMs: 3600, timestamp: 7, line: 3 },
+      ],
+    };
+
+    const state = {
+      frames: [],
+      playhead: 0,
+      previewLine: null,
+      activeTab: 'teacher',
+      timer: null,
+      playing: false,
+    };
+
+    const insightViews = {
+      teacher: {
+        title: 'Teacher',
+        recommendations: [
+          {
+            id: 'debug-persistence',
+            title: 'Build debugging persistence',
+            summary: 'The student keeps re-attempting the same approach after failure.',
+            cue: 'High retry count',
+            previewLine: 2,
+            evidence: [
+              { label: 'Repeated failed runs', frame: 5, kind: 'risk' },
+              { label: 'Reset after error', frame: 3, kind: 'risk' },
+            ],
+          },
+          {
+            id: 'stabilize-reset',
+            title: 'Slow the reset loop',
+            summary: 'A failed run is followed by a quick wipe and another nearly identical attempt.',
+            cue: 'Rapid edit after failure',
+            previewLine: 1,
+            evidence: [
+              { label: 'Workspace cleared', frame: 3, kind: 'risk' },
+              { label: 'Same error repeated', frame: 5, kind: 'risk' },
+            ],
+          },
+        ],
+        summary: [
+          { label: 'Debugging persistence', value: 'Low', tone: 'risk' },
+          { label: 'Edit stability', value: 'Mixed', tone: 'neutral' },
+        ],
+      },
+      parent: {
+        title: 'Parent',
+        recommendations: [
+          {
+            id: 'stay-with-problem',
+            title: 'Practice staying with the problem',
+            summary: 'The student is still learning how to recover after mistakes without starting over.',
+            cue: 'Growth opportunity',
+            previewLine: 2,
+            evidence: [
+              { label: 'Repeated failed runs', frame: 5, kind: 'risk' },
+              { label: 'Thoughtful follow-up edit', frame: 6, kind: 'progress' },
+            ],
+          },
+          {
+            id: 'celebrate-recovery',
+            title: 'Celebrate steady recovery',
+            summary: 'A later edit shows the student can keep moving once they regroup.',
+            cue: 'Encourage consistency',
+            previewLine: 3,
+            evidence: [
+              { label: 'New helper introduced', frame: 6, kind: 'progress' },
+              { label: 'No paste-heavy shortcut', frame: 0, kind: 'progress' },
+            ],
+          },
+        ],
+        summary: [
+          { label: 'Recovery after error', value: 'Developing', tone: 'progress' },
+          { label: 'Thoughtful pacing', value: 'Inconsistent', tone: 'neutral' },
+        ],
+      },
+    };
+
+    function buildFrames(events) {
+      const frames = [];
+      let buffer = [];
+
+      for (const event of events) {
+        if (event.type === 'text_change' && event.action === 'insert') {
+          buffer.push(event.delta);
+          frames.push({
+            kind: 'insert',
+            text: buffer.join(''),
+            line: event.line,
+          });
+          continue;
+        }
+
+        if (event.type === 'text_change' && event.action === 'delete_cascade') {
+          buffer = [];
+          frames.push({
+            kind: 'delete_cascade',
+            text: '(workspace cleared)',
+            line: event.line,
+          });
+          continue;
+        }
+
+        if (event.type === 'execution') {
+          frames.push({
+            kind: event.status === 'failed' ? 'execution-failed' : 'execution-success',
+            text: event.snapshot || buffer.join('\n') || '(no code recorded)',
+            line: event.line,
+          });
+        }
+      }
+
+      return frames.length ? frames : [{ kind: 'empty', text: '(no code recorded)', line: 1 }];
+    }
+
+    function buildLines(text) {
+      return text.split('\n').map((line, index) => `<span class="line" data-line="${index + 1}">${line || '&nbsp;'}</span>`).join('');
+    }
+
+    function getInsightView() {
+      return insightViews[state.activeTab];
+    }
+
+    function renderSummaryChip(item) {
+      return `
+        <div class="summary-chip">
+          <div class="summary-label">${item.label}</div>
+          <div class="summary-value">${item.value}</div>
+        </div>
+      `;
+    }
+
+    function renderEvidencePill(evidence, recommendationId) {
+      return `
+        <span class="evidence-pill" data-line="${evidence.frame}" data-kind="${evidence.kind}" data-recommendation-id="${recommendationId}">
+          ${evidence.label} · Frame ${evidence.frame}
+        </span>
+      `;
+    }
+
+    function renderRecommendationCard(recommendation, viewTitle) {
+      return `
+        <button class="insight-card" data-line="${recommendation.previewLine}" data-kind="${recommendation.id}">
+          <div class="insight-kicker">${viewTitle} recommendation</div>
+          <div class="font-semibold">${recommendation.title}</div>
+          <div class="insight-summary">${recommendation.summary}</div>
+          <div class="insight-cue">${recommendation.cue}</div>
+          <div class="insight-evidence">
+            ${recommendation.evidence.map(evidence => renderEvidencePill(evidence, recommendation.id)).join('')}
+          </div>
+        </button>
+      `;
+    }
+
+    function renderMarkers() {
+      const markers = [
+        { label: 'Paste', className: 'marker-paste', frame: 1 },
+        { label: 'Cascade', className: 'marker-cascade', frame: 3 },
+        { label: 'Loop', className: 'marker-loop', frame: 5 },
+        { label: 'Positive', className: 'marker-positive', frame: 6 },
+      ];
+
+      document.getElementById('timeline-markers').innerHTML = markers
+        .map(marker => `<span class="marker-pill ${marker.className}" data-frame="${marker.frame}">${marker.label}</span>`)
+        .join('');
+    }
+
+    function renderCode() {
+      const frame = state.frames[state.playhead];
+      const shell = document.getElementById('code-shell');
+      const codeView = document.getElementById('code-view');
+
+      codeView.innerHTML = buildLines(frame.text);
+
+      const lines = codeView.querySelectorAll('.line');
+      lines.forEach(line => {
+        const lineNo = Number(line.dataset.line);
+        line.classList.toggle('is-current', lineNo === frame.line);
+        line.classList.toggle('is-preview', state.previewLine === lineNo);
+      });
+
+      shell.classList.toggle('is-preview', state.previewLine != null);
+      document.getElementById('replay-meta').textContent = `Frame ${state.playhead + 1} of ${state.frames.length}`;
+      document.getElementById('timeline').value = String(state.playhead);
+    }
+
+    function renderInsights() {
+      const rail = document.getElementById('insight-rail');
+      const view = getInsightView();
+
+      if (!view.recommendations.length) {
+        rail.innerHTML = state.activeTab === 'teacher'
+          ? '<p class="empty-note">No teacher signals for this session.</p>'
+          : '<p class="empty-note">No parent badges yet for this session.</p>';
+        return;
+      }
+
+      rail.innerHTML = `
+        <section class="insight-section">
+          <div class="section-label">Behavior summary</div>
+          <div class="summary-grid">
+            ${view.summary.map(renderSummaryChip).join('')}
+          </div>
+        </section>
+        <section class="insight-section">
+          <div class="section-label">Recommendations</div>
+          ${view.recommendations.map(recommendation => renderRecommendationCard(recommendation, view.title)).join('')}
+        </section>
+      `;
+
+      document.querySelectorAll('.insight-card').forEach(card => {
+        card.addEventListener('mouseenter', () => {
+          const line = Number(card.dataset.line);
+          state.previewLine = line;
+          highlightCards(card.dataset.kind);
+          renderCode();
+        });
+
+        card.addEventListener('mouseleave', () => {
+          clearPreview();
+        });
+      });
+
+      document.querySelectorAll('.evidence-pill').forEach(pill => {
+        pill.addEventListener('mouseenter', () => {
+          state.previewLine = Number(pill.dataset.line);
+          highlightCards(pill.dataset.recommendationId);
+          renderCode();
+        });
+      });
+    }
+
+    function highlightCards(kind) {
+      document.querySelectorAll('.insight-card').forEach(card => {
+        card.classList.toggle('is-highlighted', card.dataset.kind === kind);
+      });
+    }
+
+    function clearPreview() {
+      state.previewLine = null;
+      document.querySelectorAll('.insight-card').forEach(card => card.classList.remove('is-highlighted'));
+      renderCode();
+    }
+
+    function setPlayhead(index) {
+      state.playhead = Math.max(0, Math.min(state.frames.length - 1, index));
+      renderCode();
+    }
+
+    function togglePlayback() {
+      state.playing = !state.playing;
+      document.getElementById('play-toggle').textContent = state.playing ? 'Pause' : 'Play';
+
+      if (!state.playing) {
+        window.clearInterval(state.timer);
+        state.timer = null;
+        return;
+      }
+
+      state.timer = window.setInterval(() => {
+        if (state.playhead >= state.frames.length - 1) {
+          state.playing = false;
+          document.getElementById('play-toggle').textContent = 'Play';
+          window.clearInterval(state.timer);
+          state.timer = null;
+          return;
+        }
+        setPlayhead(state.playhead + 1);
+      }, 900);
+    }
+
+    function setActiveTab(tab) {
+      state.activeTab = tab;
+      document.getElementById('tab-teacher').setAttribute('aria-selected', String(tab === 'teacher'));
+      document.getElementById('tab-parent').setAttribute('aria-selected', String(tab === 'parent'));
+      renderInsights();
+      clearPreview();
+    }
+
+    function bindEvents() {
+      document.getElementById('play-toggle').addEventListener('click', togglePlayback);
+      document.getElementById('timeline').addEventListener('input', event => {
+        setPlayhead(Number(event.target.value));
+      });
+      document.getElementById('tab-teacher').addEventListener('click', () => setActiveTab('teacher'));
+      document.getElementById('tab-parent').addEventListener('click', () => setActiveTab('parent'));
+
+      document.getElementById('timeline-markers').addEventListener('mouseenter', event => {
+        const marker = event.target.closest('.marker-pill');
+        if (!marker) return;
+        const frame = Number(marker.dataset.frame);
+        state.previewLine = frame === 1 ? 2 : frame === 3 ? 1 : frame === 5 ? 2 : 3;
+        renderCode();
+      }, true);
+
+      document.getElementById('timeline-markers').addEventListener('mouseleave', () => {
+        clearPreview();
+      });
+    }
+
+    function init() {
+      state.frames = buildFrames(session.events);
+      document.getElementById('timeline').max = String(state.frames.length - 1);
+      renderMarkers();
+      renderInsights();
+      renderCode();
+      bindEvents();
+    }
+
+    init();
+  </script>
 </body>
 </html>
