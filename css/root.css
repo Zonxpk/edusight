@@ -336,7 +336,7 @@ input {
   padding: 9px 12px;
   border-radius: 999px;
   background: rgba(34, 195, 230, 0.14);
-  color: white;
+  color: var(--primary);
   font-size: 0.86rem;
   font-weight: 700;
 }
